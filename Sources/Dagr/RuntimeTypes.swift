@@ -3,6 +3,7 @@
 //  
 //
 //  Created by Maxim Zaks on 01.12.22.
+//  https://github.com/mzaks/dagr
 //
 //  MIT License
 //
