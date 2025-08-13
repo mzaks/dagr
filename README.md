@@ -48,6 +48,312 @@ Dagr is particularly well-suited for applications where the performance, type sa
 *   **Embedded Systems and IoT Devices (if using Swift):** Data logging, configuration storage, or inter-device communication on resource-constrained hardware.
 *   **Applications with Complex, Interconnected Data Models:** Any application where data naturally forms a graph (e.g., social networks, knowledge bases, document structures with cross-references, CAD/design software data).
 
+## Putting It All Together: A Todo App Tutorial
+
+Here is a complete, step-by-step guide showing how to use Dagr to create a simple, high-performance persistence layer for a todo application.
+
+### Step 1: Add Dagr to Your Project
+
+First, you need to add Dagr to your project as a Swift Package Manager dependency. In your `Package.swift` file, add `Dagr` to your app's dependencies and create a new executable target for your code generation tool that depends on `DagrCodeGen`.
+
+```swift
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "MyTodoApp",
+    platforms: [.macOS(.v10_15)],
+    products: [
+        .executable(name: "MyTodoApp", targets: ["MyTodoApp"]),
+        .executable(name: "CodeGenerator", targets: ["CodeGenerator"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/mzaks/dagr.git", branch: "main")
+    ],
+    targets: [
+        .executableTarget(
+            name: "MyTodoApp",
+            dependencies: [
+                .product(name: "Dagr", package: "dagr")
+            ]
+        ),
+        .executableTarget(
+            name: "CodeGenerator",
+            dependencies: [
+                .product(name: "DagrCodeGen", package: "dagr")
+            ]
+        ),
+        .testTarget(
+            name: "MyTodoAppTests",
+            dependencies: ["MyTodoApp"]
+        ),
+    ]
+)
+```
+
+### Step 2: Write the Schema and Generator
+
+Next, create a `main.swift` file for your `CodeGenerator` target. This code defines the data model for our todo app and contains the logic to generate the Swift source file based on a command-line argument.
+
+```swift
+// In CodeGenerator/main.swift
+
+import Foundation
+import DagrCodeGen
+
+func main() throws {
+    guard CommandLine.arguments.count > 1 else {
+        print("Usage: CodeGenerator <output-path>")
+        print("Example: swift run CodeGenerator Sources/MyTodoApp/Generated/TodoApp.swift")
+        return
+    }
+    let outputPath = CommandLine.arguments[1]
+    let outputUrl = URL(fileURLWithPath: outputPath)
+
+    print("Generating TodoApp schema at: \(outputUrl.path)")
+
+    try generate(
+        graph: DataGraph("TodoApp", rootType: .ref("TodoList")) {
+
+            Enum("Priority", ["low", "medium", "high"])
+
+            // A dedicated, frozen node for UUIDs for maximum efficiency.
+            Node("UUID", frozen: true) {
+                "p1" ++ .u64 ++ .required
+                "p2" ++ .u64 ++ .required
+            }
+
+            // A flexible node for our todo items.
+            // Not frozen, so we can add fields later.
+            Node("TodoItem") {
+                "id"          ++ .ref("UUID") ++ .required
+                "title"       ++ .utf8        ++ .required
+                "isCompleted" ++ .bool        ++ .required
+                "priority"    ++ .ref("Priority")  ++ .required
+            }
+
+            Node("TodoList") {
+                "title" ++ .utf8 ++ .required
+                "items" ++ .ref("TodoItem").array
+            }
+        },
+        path: outputUrl
+    )
+
+    print("✅ Generation complete.")
+}
+
+try main()
+```
+
+### Step 3: Generate the Code
+
+Now, run the `CodeGenerator` from your terminal to create the `TodoApp.swift` file. Make sure the output directory exists first.
+
+```sh
+# From the root of your project
+mkdir -p Sources/MyTodoApp/Generated
+swift run CodeGenerator Sources/MyTodoApp/Generated/
+```
+
+This will create `TodoApp.swift` in the specified directory, containing all the necessary types and the high-level `encode` and `decode` API.
+
+### Step 4: Use the Generated Code in Your App
+
+Finally, you can use the generated code in your main application. Add the generated `TodoApp.swift` file to your `MyTodoApp` target and use the clean, type-safe API.
+
+To make handling `UUID`s easier, we can add a small extension to the generated `TodoApp.UUID` class.
+
+```swift
+// In your main application code (e.g., MyTodoApp/main.swift)
+
+import Foundation
+// Make sure the generated `TodoApp.swift` file is part of your app's target.
+
+// MARK: - UUID Conversion Helper
+// This extension makes it easy to work with our custom UUID type.
+extension TodoApp.UUID {
+    /// Initializes our custom UUID from a standard Foundation.UUID.
+    convenience init(from foundationUUID: Foundation.UUID) {
+        let (p1, p2) = withUnsafeBytes(of: foundationUUID.uuid) { ptr in
+            (
+                ptr.load(fromByteOffset: 0, as: UInt64.self),
+                ptr.load(fromByteOffset: 8, as: UInt64.self)
+            )
+        }
+        self.init(p1: p1, p2: p2)
+    }
+
+    /// Converts our custom UUID back to a standard Foundation.UUID.
+    func toFoundationUUID() -> Foundation.UUID {
+        var uuid: uuid_t = (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+        withUnsafeMutableBytes(of: &uuid) { ptr in
+            ptr.storeBytes(of: self.p1, toByteOffset: 0, as: UInt64.self)
+            ptr.storeBytes(of: self.p2, toByteOffset: 8, as: UInt64.self)
+        }
+        return Foundation.UUID(uuid: uuid)
+    }
+}
+
+// MARK: - Todo App Example
+func runTodoAppExample() throws {
+    // 1. Create the `TodoItem` objects using our UUID helper.
+    let item1 = TodoApp.TodoItem(
+        id: .init(from: Foundation.UUID()), // Use the convenient initializer
+        title: "Implement Dagr serialization",
+        isCompleted: true,
+        priority: .high
+    )
+
+    let item2Id = Foundation.UUID()
+    let item2 = TodoApp.TodoItem(
+        id: .init(from: item2Id),
+        title: "Write documentation",
+        isCompleted: false,
+        priority: .medium
+    )
+
+    // 2. Create the main `TodoList`.
+    let myTodoList = TodoApp.TodoList(
+        title: "My Project Tasks",
+        items: [item1, item2]
+    )
+
+    // 3. SERIALIZE the list using the `encode` convenience method.
+    let serializedData = try TodoApp.encode(root: myTodoList)
+
+    // 4. DESERIALIZE the data back into a `TodoList` object.
+    let deserializedList = try TodoApp.decode(data: serializedData)
+
+    // 5. Verify the data, converting the custom UUID back for comparison.
+    assert(deserializedList.title == "My Project Tasks")
+    assert(deserializedList.items.count == 2)
+    assert(deserializedList.items[1].title == "Write documentation")
+    let deserializedId = deserializedList.items[1].id.toFoundationUUID()
+    assert(deserializedId == item2Id)
+
+    print("✅ Todo app data serialized and deserialized successfully!")
+}
+
+try runTodoAppExample()
+```
+
+### Bonus Step: Automate with a Command Plugin
+
+To make the process even smoother, you can create an SPM Command Plugin to run the generator. This allows you to simply run `swift package generate-code` instead of typing the full command.
+
+**1. Update `Package.swift`**
+
+First, define the plugin product and target in your `Package.swift`.
+
+```swift
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "MyTodoApp",
+    platforms: [.macOS(.v10_15)],
+    products: [
+        .executable(name: "MyTodoApp", targets: ["MyTodoApp"]),
+        .executable(name: "CodeGenerator", targets: ["CodeGenerator"]),
+        // Add the plugin product
+        .plugin(name: "CodeGenPlugin", targets: ["CodeGenPlugin"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/mzaks/dagr.git", branch: "main")
+    ],
+    targets: [
+        .executableTarget(
+            name: "MyTodoApp",
+            dependencies: [
+                .product(name: "Dagr", package: "dagr")
+            ]
+        ),
+        .executableTarget(
+            name: "CodeGenerator",
+            dependencies: [
+                .product(name: "DagrCodeGen", package: "dagr")
+            ]
+        ),
+        // Add the plugin target
+        .plugin(
+            name: "CodeGenPlugin",
+            capability: .command(
+                intent: .custom(
+                    verb: "generate-code",
+                    description: "Generates the Dagr models for the TodoApp"
+                ),
+                permissions: [
+                    .writeToPackageDirectory(reason: "To generate TodoApp.swift")
+                ]
+            ),
+            dependencies: [
+                .target(name: "CodeGenerator")
+            ]
+        ),
+        .testTarget(
+            name: "MyTodoAppTests",
+            dependencies: ["MyTodoApp"]
+        ),
+    ]
+)
+```
+
+**2. Write the Plugin Code**
+
+Create a `Plugins/CodeGenPlugin` directory and add the following `Plugin.swift` file. This plugin will find the `CodeGenerator` executable and run it with the correct output path.
+
+```swift
+// In Plugins/CodeGenPlugin/Plugin.swift
+
+import PackagePlugin
+import Foundation
+
+@main
+struct CodeGenPlugin: CommandPlugin {
+    func performCommand(context: PluginContext, arguments: [String]) async throws {
+        // 1. Get the CodeGenerator tool
+        let tool = try context.tool(named: "CodeGenerator")
+
+        // 2. Define the output path for the generated file
+        let outputUrl = context.package.directoryURL
+            .appending(components: "Sources", "MyTodoApp", "Generated")
+
+        // 3. Create the directory if it doesn't exist
+        try FileManager.default.createDirectory(
+            at: outputUrl,
+            withIntermediateDirectories: true
+        )
+
+        // 4. Run the generator process
+        let proc = Process()
+        proc.executableURL = tool.url
+        proc.arguments = [outputUrl.path(percentEncoded: false)] + arguments
+
+        try proc.run()
+        proc.waitUntilExit()
+
+        // 5. Check for errors
+        if proc.terminationReason != .exit || proc.terminationStatus != 0 {
+            let problem = "\(proc.terminationReason):\(proc.terminationStatus)"
+            Diagnostics.error("Code generation failed: \(problem)")
+        } else {
+            print("✅ Plugin finished generating code.")
+        }
+    }
+}
+```
+
+**3. Run the Plugin**
+
+Now you can generate your code with a simple, memorable command:
+
+```sh
+swift package generate-code
+```
+
+This command will automatically find and run your `CodeGenerator`, which in turn creates or updates the `TodoApp.swift` file, fully automating your workflow.
+
 
 ## Binary Format Specification
 

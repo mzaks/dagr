@@ -713,11 +713,6 @@ public final class DataBuilder: Builder {
                 }
             } else {
                 _ = try storeAsLEB(value: (Int64(position) - Int64(offset)).toZigZag, at: position)
-//                if position > offset {
-//                    _ = try storeAsLEB(value: (position - offset) << 1, at: position)
-//                } else {
-//                    _ = try storeAsLEB(value: ((offset - position) << 1) | 1, at: position)
-//                }
             }
             nodesForLateBinding.removeValue(forKey: structNodeId)
         }

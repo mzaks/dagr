@@ -132,7 +132,7 @@ func main() throws {
 
     let outputPath = CommandLine.arguments[1]
 
-    let outputUrl = URL(string: outputPath)!
+    let outputUrl = URL(fileURLWithPath: outputPath)
 
     try genDataBuilderGraph(outputUrl: outputUrl)
 

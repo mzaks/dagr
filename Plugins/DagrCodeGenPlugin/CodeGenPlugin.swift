@@ -16,7 +16,7 @@ struct DagrStoreGenPlugin: CommandPlugin {
         let outputUrl = context.package.directoryURL.appending(components: "Tests", "DagrTests", "gen")
         let proc = Process()
         proc.executableURL = tool.url
-        proc.arguments = [outputUrl.absoluteString] + arguments
+        proc.arguments = [outputUrl.path(percentEncoded: false)] + arguments
 
         try proc.run()
         proc.waitUntilExit()
