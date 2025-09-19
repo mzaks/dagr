@@ -27,6 +27,71 @@ Dagr was built to fill this gap, offering a "best of both worlds" solution with 
 *   **Full Graph Support:** Dagr is explicitly designed to handle complex object graphs, including **cyclical references**, which cause many other frameworks to fail.
 *   **Rich Type System:** Provides first-class support for not just structs (`Node`), but also **enums (`Enum`)** and **tagged unions (`UnionType`)**, including arrays of unions.
 
+### Defaults and Prefabs
+
+Dagr supports defining default values for fields and creating pre-configured instances of nodes, known as "prefabs". These features enhance the flexibility and reusability of your data models.
+
+#### Defaults
+
+The **defaults** feature allows you to specify a default value for a field within a `Node` definition. If a new instance of the node is created without a value for that field, the default value is automatically used. This is useful for making fields optional from a developer's perspective, even if they are required in the schema, and for providing sensible defaults for your data structures.
+
+Here is an example:
+
+```swift
+Node("Person") {
+    "name"      ++ .utf8                ++ .required    ++ .string("John Doe")
+    "active"    ++ .bool                                ++ .bool(true)
+    "gender"    ++ .ref("Gender")       ++ .required    ++ .ref("diverse")
+}
+```
+
+In this example:
+*   The `name` field is a required string, but it has a default value of "John Doe".
+*   The `active` field is a boolean with a default value of `true`.
+*   The `gender` field is a reference to a `Gender` enum and defaults to the `diverse` case.
+
+#### Prefabs
+
+The **prefabs** feature allows you to define named, pre-configured, immutable instances of a `Node`. Think of them as templates or constant examples of your data structures. For each prefab you define, a `static let` constant is generated on the corresponding node type, making it easy to access and reuse.
+
+This is useful for creating standard, reusable instances of your data structures. For example, you could have a `User` node with a `guest` prefab for an anonymous user, or a `Color` node with prefabs for `red`, `green`, and `blue`.
+
+Here is an example:
+
+```swift
+Node("MyDate", frozen: true) {
+    "day"   ++ .u8  ++ .required
+    "month" ++ .u8  ++ .required
+    "year"  ++ .u16 ++ .required
+} ++ [
+    "millennium": [
+        "day": .int(1),
+        "month": .int(1),
+        "year": .int(2000)
+    ]
+]
+```
+
+In this example:
+*   A prefab named `millennium` is defined for the `MyDate` node.
+*   This prefab represents the date January 1, 2000.
+*   The generated code will include a static property `MyDate.millennium` that you can use in your code.
+
+#### How They Work Together
+
+Defaults and prefabs can be used together. You can use a prefab as the default value for a field that is a reference to another node.
+
+For example, in a `Person` node, the `date` field's default value could be a reference to the `millennium` prefab from the `MyDate` node:
+
+```swift
+Node("Person") {
+    // ... other fields
+    "date"      ++ .ref("MyDate")                       ++ .ref("millennium")
+}
+```
+
+This means that if you create a `Person` object without specifying a date, its `date` property will automatically be set to the `MyDate.millennium` instance.
+
 ### Robust Schema Evolution
 *   **Automated Compatibility Validation:** Dagr automatically saves a fingerprint of your schema and, on subsequent builds, validates that any changes are backward-compatible. This prevents you from accidentally shipping a breaking change.
 *   **Forward & Backward Compatibility:** The framework is designed to allow new code to read old data and old code to safely ignore fields from new data.
