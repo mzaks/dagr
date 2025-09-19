@@ -28,7 +28,7 @@
 
 import Foundation
 
-enum ReaderError: Error {
+public enum ReaderError: Error {
     case badOffset(Int64)
     case couldNotReadNumericType(any Numeric.Type)
     case unfinishedLEB
@@ -40,6 +40,7 @@ enum ReaderError: Error {
     case unfittingUnionType
     case badVTableCount(Int)
     case badStructOffset
+    case requiredFieldIsMissing
 }
 
 public protocol Reader {

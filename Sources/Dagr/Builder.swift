@@ -93,7 +93,7 @@ public final class DataBuilder: Builder {
     private var sparseVTableLookup = [[VTableLookupPair]: UInt64]()
     private var structNodeLookup = [ObjectIdentifier: UInt64]()
     private var nodesInProgress = Set<ObjectIdentifier>()
-    private var nodesForLateBinding = [ObjectIdentifier: (UInt64, UInt64?)]()
+    private var nodesForLateBinding = [ObjectIdentifier: [(UInt64, UInt64?)]]()
 
     public init(maxSize: UInt64 = UInt64(Int32.max)) {
         self.maxSize = maxSize
@@ -188,28 +188,28 @@ public final class DataBuilder: Builder {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt8(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 1 {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt16(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 2 {
            for (value, structNodeId) in values {
                _ = try store(number: UInt32(value))
                if let structNodeId {
-                   nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                   setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                }
            }
         } else {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt64(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         }
@@ -266,28 +266,28 @@ public final class DataBuilder: Builder {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt8(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 1 {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt16(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 2 {
            for (value, structNodeId) in values {
                _ = try store(number: UInt32(value))
                if let structNodeId {
-                   nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                   setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                }
            }
         } else {
             for (value, structNodeId) in values {
                 _ = try store(number: UInt64(value))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         }
@@ -428,28 +428,28 @@ public final class DataBuilder: Builder {
             for (relativeOffset, structNodeId) in relativeOffsets {
                 _ = try store(number: UInt8(relativeOffset))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 1 {
             for (relativeOffset, structNodeId) in relativeOffsets {
                 _ = try store(number: UInt16(relativeOffset))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 2 {
             for (relativeOffset, structNodeId) in relativeOffsets {
                 _ = try store(number: UInt32(relativeOffset))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         } else if widthCode == 3 {
             for (relativeOffset, structNodeId) in relativeOffsets {
                 _ = try store(number: UInt64(relativeOffset))
                 if let structNodeId {
-                    nodesForLateBinding[structNodeId] = (cursor, arrayEndOffset)
+                    setNodeForLateBinding(structNodeId: structNodeId, offset: arrayEndOffset)
                 }
             }
         }
@@ -699,22 +699,25 @@ public final class DataBuilder: Builder {
         nodesInProgress.insert(structNodeId)
         let offset = try structNode.apply(builder: self)
         nodesInProgress.remove(structNodeId)
-        if let (position, arrayEndOffset) = nodesForLateBinding[structNodeId] {
-            if let arrayEndOffset {
-                let signEncodedOffset = (Int64(arrayEndOffset) - Int64(offset)).toZigZag
-                if signEncodedOffset <= UInt8.max {
-                    store(number: UInt8(signEncodedOffset), at: position)
-                } else if signEncodedOffset <= UInt16.max {
-                    store(number: UInt16(signEncodedOffset), at: position)
-                } else if signEncodedOffset <= UInt32.max {
-                    store(number: UInt32(signEncodedOffset), at: position)
+        if let bindings = nodesForLateBinding[structNodeId] {
+            for (position, arrayEndOffset) in bindings {
+                if let arrayEndOffset {
+                    let signEncodedOffset = (Int64(arrayEndOffset) - Int64(offset)).toZigZag
+                    if signEncodedOffset <= UInt8.max {
+                        store(number: UInt8(signEncodedOffset), at: position)
+                    } else if signEncodedOffset <= UInt16.max {
+                        store(number: UInt16(signEncodedOffset), at: position)
+                    } else if signEncodedOffset <= UInt32.max {
+                        store(number: UInt32(signEncodedOffset), at: position)
+                    } else {
+                        store(number: UInt64(signEncodedOffset), at: position)
+                    }
                 } else {
-                    store(number: UInt64(signEncodedOffset), at: position)
+                    _ = try storeAsLEB(value: (Int64(position) - Int64(offset)).toZigZag, at: position)
                 }
-            } else {
-                _ = try storeAsLEB(value: (Int64(position) - Int64(offset)).toZigZag, at: position)
+                nodesForLateBinding.removeValue(forKey: structNodeId)
             }
-            nodesForLateBinding.removeValue(forKey: structNodeId)
+
         }
         structNodeLookup[structNodeId] = offset
         return offset
@@ -744,13 +747,13 @@ public final class DataBuilder: Builder {
 
     public func reserveFieldPointer(for structNode: Node) throws -> UInt64 {
         _ = try store(inline: [UInt8](repeating: 0, count: reserveFieldPointerSize))
-        nodesForLateBinding[ObjectIdentifier(structNode)] = (cursor, nil)
+        setNodeForLateBinding(structNodeId: ObjectIdentifier(structNode), offset: nil)
         return cursor
     }
 
     public func reserveFieldPointer(structNodeId: ObjectIdentifier) throws -> UInt64 {
         _ = try store(inline: [UInt8](repeating: 0, count: reserveFieldPointerSize))
-        nodesForLateBinding[structNodeId] = (cursor, nil)
+        setNodeForLateBinding(structNodeId: structNodeId, offset: nil)
         return cursor
     }
 
@@ -842,5 +845,14 @@ public final class DataBuilder: Builder {
         newData.advanced(by:Int(leftCursor)).copyMemory(from: _data.advanced(by: Int(_leftCursor)), byteCount: Int(cursor))
         _data.deallocate()
         _data = newData
+    }
+
+    private func setNodeForLateBinding(structNodeId: ObjectIdentifier, offset: UInt64?) {
+        if let bindings = nodesForLateBinding[structNodeId] {
+            nodesForLateBinding[structNodeId] = bindings + [(cursor, offset)]
+        } else {
+            nodesForLateBinding[structNodeId] = [(cursor, offset)]
+        }
+
     }
 }

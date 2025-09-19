@@ -38,6 +38,48 @@ import Testing
     }), error: .typeWasChanged(typeName: "B", prevType: "Enum", currentType: "Node"))
 }
 
+@Test func validateTypePropertyChange() throws {
+    assert(new: DataGraph("", rootType: .ref("A"), types: {
+        Node("A", frozen: true) {
+            "a" ++ .i32
+        }
+    }), compatibleWith: DataGraph("", rootType: .ref("A"), types: {
+        Node("A") {
+            "a" ++ .i32
+        }
+    }), error: .typePropertyWasChanged(typeName: "A", from: "notFrozen", to: "frozen"))
+
+    assert(new: DataGraph("", rootType: .ref("A"), types: {
+        Node("A") {
+            "a" ++ .i32
+        }
+    }), compatibleWith: DataGraph("", rootType: .ref("A"), types: {
+        Node("A", frozen: true) {
+            "a" ++ .i32
+        }
+    }), error: .typePropertyWasChanged(typeName: "A", from: "frozen", to: "notFrozen"))
+
+    assert(new: DataGraph("", rootType: .ref("A"), types: {
+        Node("A") {
+            "a" ++ .i32
+        }
+    }), compatibleWith: DataGraph("", rootType: .ref("A"), types: {
+        Node("A", sparse: true) {
+            "a" ++ .i32
+        }
+    }), error: .typePropertyWasChanged(typeName: "A", from: "sparse", to: "notSparse"))
+
+    assert(new: DataGraph("", rootType: .ref("A"), types: {
+        Node("A", sparse: true) {
+            "a" ++ .i32
+        }
+    }), compatibleWith: DataGraph("", rootType: .ref("A"), types: {
+        Node("A") {
+            "a" ++ .i32
+        }
+    }), error: .typePropertyWasChanged(typeName: "A", from: "notSparse", to: "sparse"))
+}
+
 @Test func validateRemoveField() throws {
     assert(new: DataGraph("", rootType: .ref("A"), types: {
         Node("A") {
@@ -392,6 +434,53 @@ import Testing
             "a" ++ .i32
         }
     }), error: .newFieldShouldNotBeRequired(structName: "A", fieldName: "b"))
+}
+
+@Test func validateNewFieldCanBeMarkedRequiredWithDefault() throws {
+    let old = DataGraph("", rootType: .ref("A")){
+        Node("A") {
+            "a" ++ .i32
+        }
+    }
+    let new = DataGraph("", rootType: .ref("A")) {
+        Node("A") {
+            "a" ++ .i32
+            "b" ++ .i32 ++ .required ++ .int(0)
+        }
+    }
+    try new.checkCompatiblityWith(previous: old)
+}
+
+@Test func validateRequiredFieldCanBeDeprecatedWithDefault() throws {
+    let old = DataGraph("", rootType: .ref("A")){
+        Node("A") {
+            "a" ++ .i32
+            "b" ++ .i32 ++ .required
+        }
+    }
+    let new = DataGraph("", rootType: .ref("A")) {
+        Node("A") {
+            "a" ++ .i32
+            "b" ++ .i32 ++ .deprecated ++ .int(0)
+        }
+    }
+    try new.checkCompatiblityWith(previous: old)
+}
+
+@Test func validateAddingCaseToNonStrictEnumIsCompatible() throws {
+    let old = DataGraph("Test", rootType: .ref("S"), types: {
+        Node("S") {
+            "e" ++ .ref("E") // Optional field is a non-strict usage
+        }
+        Enum("E", ["a"])
+    })
+    let new = DataGraph("Test", rootType: .ref("S"), types: {
+        Node("S") {
+            "e" ++ .ref("E")
+        }
+        Enum("E", ["a", "b"]) // Adding a case
+    })
+    try new.checkCompatiblityWith(previous: old)
 }
 
 private func assert(new g1: DataGraph, compatibleWith previous: DataGraph, error: CompatibilityError) {

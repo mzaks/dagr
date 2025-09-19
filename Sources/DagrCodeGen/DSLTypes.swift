@@ -39,18 +39,101 @@ public struct NodeTypeBuilder {
     }
 }
 
+public indirect enum Value: Codable, Equatable, Hashable {
+    case bool(Bool)
+    case int(Int)
+    case float(Double)
+    case string(String)
+    case ref(String)
+    case unionRef(String, Value)
+    case array([Value])
+    case b64Data(String)
+    case `nil`
+}
+
+extension Value {
+    func conformsToFieldType(_ type: EntryType, lookup: Dictionary<String, NodeType>, allowNil: Bool = false) -> Bool {
+        switch self {
+        case .string:
+            return type == .utf8
+        case .bool:
+            return type == .bool
+        case .int:
+            return type.isIntRepresentable
+        case .float:
+            return type.isFloatRepresentable
+        case .ref(let valueName):
+            guard case .ref(let nodeName) = type else {
+                return false
+            }
+            guard let nodeType = lookup[nodeName] else {
+                return false
+            }
+            if let nodeType = nodeType as? Enum {
+                return nodeType.cases.values.contains(valueName)
+            }
+            if let nodeType = lookup[nodeName] as? Node {
+                return nodeType.prefabs[valueName] != nil
+            }
+            return false
+        case .unionRef(let typeName, let value):
+            guard case .ref(let nodeName) = type else {
+                return false
+            }
+            guard let unionType = lookup[nodeName] as? UnionType else {
+                return false
+            }
+            guard let typePair = unionType.types.first(where: {$0.name == typeName}) else {
+                return false
+            }
+            return value.conformsToFieldType(typePair.type, lookup: lookup)
+        case .array(let values):
+            if case .array(let nodeType) = type {
+                for value in values {
+                    if value.conformsToFieldType(nodeType, lookup: lookup) == false{
+                        return false
+                    }
+                }
+                return true
+            }
+            if case .arrayWithOptionals(let nodeType) = type {
+                for value in values {
+                    if value.conformsToFieldType(nodeType, lookup: lookup, allowNil: true) == false{
+                        return false
+                    }
+                }
+                return true
+            }
+            return false
+        case .b64Data:
+            return type == .data
+        case .nil:
+            return allowNil
+        }
+    }
+}
 
 public struct Node: NodeType, Codable {
     public let name: String
     public let frozen: Bool
     public let sparse: Bool
     public let fields: [Field]
+    public let prefabs: [String: [String: Value]]
+
+    public init(name: String, frozen: Bool, sparse: Bool, fields:[Field], prefabs: [String: [String: Value]]) {
+        self.name = name
+        self.frozen = frozen
+        self.sparse = sparse
+        self.fields = fields
+        self.prefabs = prefabs
+    }
 
     public init(_ name: String, @FieldBuilder fields: () -> [Field]) {
         self.name = name
         self.frozen = false
         self.sparse = false
         self.fields = fields()
+        self.prefabs = [:]
     }
 
     public init(_ name: String, frozen: Bool, @FieldBuilder fields: () -> [Field]) {
@@ -58,6 +141,7 @@ public struct Node: NodeType, Codable {
         self.frozen = frozen
         self.sparse = false
         self.fields = fields()
+        self.prefabs = [:]
     }
 
     public init(_ name: String, sparse: Bool, @FieldBuilder fields: () -> [Field]) {
@@ -65,6 +149,11 @@ public struct Node: NodeType, Codable {
         self.frozen = false
         self.sparse = sparse
         self.fields = fields()
+        self.prefabs = [:]
+    }
+
+    public func setPrefabs(prefabs: [String: [String: Value]]) -> Self {
+        return .init(name: name, frozen: frozen, sparse: sparse, fields: fields, prefabs: prefabs)
     }
 }
 
@@ -82,6 +171,7 @@ extension Node {
             }
         }
     }
+
     var collidingFieldNames: Set<String> {
         var visitedFieldNames = Set<String>()
         var result = Set<String>()
@@ -95,10 +185,76 @@ extension Node {
         return result
     }
 
+    var collidingPrefabNames: Set<String> {
+        var visitedPrefabNames = Set<String>()
+        var result = Set<String>()
+        for name in prefabs.keys {
+            if visitedPrefabNames.contains(name) {
+                result.insert(name)
+            } else {
+                visitedPrefabNames.insert(name)
+            }
+        }
+        return result
+    }
+
+    var missingPrefabFields: Set<String> {
+        var result = Set<String>()
+        for (prefabName, prefab) in prefabs {
+            self.fields.forEach { field in
+                if field.fieldOptions.isRequired && field.defaultValue == nil {
+                    if prefab[field.name] == nil {
+                        result.insert("\(prefabName).\(field.name)")
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    func invalidPrefabFields(lookup: Dictionary<String, NodeType>) -> Set<String> {
+        var result = Set<String>()
+        for (prefabName, prefab) in prefabs {
+            for fieldName in prefab.keys {
+                if let field = self.fields.first(where: { $0.name == fieldName }) {
+                    let value = prefab[fieldName]!
+                    let allowNil = field.fieldOptions.isRequired == false || field.type.isArray
+                    if value.conformsToFieldType(field.type, lookup: lookup, allowNil: allowNil) == false {
+                        result.insert("\(prefabName).\(fieldName)")
+                    }
+                } else {
+                    result.insert("\(prefabName).\(fieldName)")
+                }
+            }
+        }
+        return result
+    }
+
     var fieldsWithInvalidOptions: Set<String> {
         var result = Set<String>()
         for field in fields {
             if field.fieldOptions.invalid {
+                result.insert(field.name)
+            }
+        }
+        return result
+    }
+
+    var keyFieldWithDefaultValue: String? {
+        for field in fields {
+            if field.fieldOptions == .key && field.defaultValue != nil {
+                return field.name
+            }
+        }
+        return nil
+    }
+
+    func fieldsWithInvalidDefaults(lookup: Dictionary<String, NodeType>) -> Set<String> {
+        var result = Set<String>()
+        for field in fields {
+            guard let defaultValue = field.defaultValue else { continue }
+            let allowNil = field.fieldOptions.isRequired == false || field.type.isArray
+            if defaultValue.conformsToFieldType(field.type, lookup: lookup, allowNil: allowNil) == false {
                 result.insert(field.name)
             }
         }
@@ -119,10 +275,10 @@ extension Node {
                 if field.index != nil {
                     try addField(field: field)
                 } else {
-                    try addField(field: Field(field.name, type: field.type, fieldOptions: field.fieldOptions, index: UInt(index)))
+                    try addField(field: Field(field.name, type: field.type, fieldOptions: field.fieldOptions, index: UInt(index), defaultValue: field.defaultValue))
                 }
             }
-
+            guard self.sparse == false else { return result }
             var prevIndex: Int = -1
             for index in result.keys.sorted() {
                 if index == 0 {
@@ -367,6 +523,33 @@ public indirect enum EntryType: Equatable, Hashable, Codable {
         }
     }
 
+    var isIntRepresentable: Bool {
+        switch self {
+        case .u8, .u16, .u32, .u64, .i8, .i16, .i32, .i64:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isFloatRepresentable: Bool {
+        switch self {
+        case .f32, .f64:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isArray: Bool {
+        switch self {
+        case .array, .arrayWithOptionals:
+            return true
+        default:
+            return false
+        }
+    }
+
     func validate(lookup: Dictionary<String, NodeType>, visited: inout Set<EntryType>) throws {
         guard visited.contains(self) == false else {
             return
@@ -387,6 +570,23 @@ public indirect enum EntryType: Equatable, Hashable, Codable {
                 let collidingFieldNames = s.collidingFieldNames.sorted()
                 guard collidingFieldNames.isEmpty else {
                     throw ValidationError.collidingFieldNames(nodeName: name, fieldNames: collidingFieldNames)
+                }
+                let invalidDefaultsFieldNames = s.fieldsWithInvalidDefaults(lookup: lookup).sorted()
+                guard invalidDefaultsFieldNames.isEmpty else {
+                    throw ValidationError.fieldsWithInvalidDefaults(nodeName: name, fieldNames: invalidDefaultsFieldNames)
+                }
+                let missingPrefabFields = s.missingPrefabFields.sorted()
+                guard missingPrefabFields.isEmpty else {
+                    throw ValidationError.missingPrefabFields(nodeName: name, fieldNames: missingPrefabFields)
+                }
+                let invalidPrefabFields = s.invalidPrefabFields(lookup: lookup).sorted()
+                guard invalidPrefabFields.isEmpty else {
+                    throw ValidationError.invalidPrefabFields(nodeName: name, fieldNames: invalidPrefabFields)
+                }
+
+                let keyFieldWithDefaultValue = s.keyFieldWithDefaultValue
+                guard keyFieldWithDefaultValue == nil else {
+                    throw ValidationError.keyFieldCannotHaveDefaultValue(nodeName: name, fieldName: keyFieldWithDefaultValue!)
                 }
                 do {
                     for f in try s.indexedFields.values {
@@ -447,6 +647,20 @@ public indirect enum EntryType: Equatable, Hashable, Codable {
                 throw CompatibilityError.typeWasChanged(typeName: selfType.name, prevType: "\(type(of: prevType))", currentType: "\(type(of: selfType))")
             }
             if let current = selfType as? Node, let prev = prevType as? Node {
+                guard current.frozen == prev.frozen else {
+                    throw CompatibilityError.typePropertyWasChanged(
+                        typeName: self.typeName,
+                        from: prev.frozen ? "frozen" : "notFrozen",
+                        to: current.frozen ? "frozen" : "notFrozen"
+                    )
+                }
+                guard current.sparse == prev.sparse else {
+                    throw CompatibilityError.typePropertyWasChanged(
+                        typeName: self.typeName,
+                        from: prev.sparse ? "sparse" : "notSparse",
+                        to: current.sparse ? "sparse" : "notSparse"
+                    )
+                }
                 let prevIndexedFields = try prev.indexedFields
                 let currentIndexedFields = try current.indexedFields
                 for index in prevIndexedFields.keys {
@@ -465,13 +679,14 @@ public indirect enum EntryType: Equatable, Hashable, Codable {
                     guard try currentField.type.compatible(with: prevField.type, strict: isRequired, selfLookup: selfLookup, otherLookup: otherLookup, visited: &visited) else {
                         throw CompatibilityError.changedFieldType(nodeName: selfType.name, fieldName: prevField.name)
                     }
-                    guard currentField.fieldOptions.compatible(with: prevField.fieldOptions) else {
+                    guard currentField.fieldOptions.compatible(with: prevField.fieldOptions, selfHasDefault: currentField.defaultValue != nil) else {
                         throw CompatibilityError.incompatibleFieldOptions(nodeName: selfType.name, fieldName: prevField.name)
                     }
                 }
                 for index in currentIndexedFields.keys {
                     if let field = currentIndexedFields[index], prevIndexedFields[index] == nil {
-                        guard currentIndexedFields[index]!.fieldOptions.contains(.required) == false else {
+                        guard field.fieldOptions.contains(.required) == false
+                                || field.defaultValue != nil else {
                             throw CompatibilityError.newFieldShouldNotBeRequired(structName: selfType.name, fieldName: field.name)
                         }
                     }
@@ -551,14 +766,14 @@ public struct FieldOptions: OptionSet, Equatable, Codable, Sendable {
         self.contains(.required) || self.contains(.key)
     }
 
-    func compatible(with prev: FieldOptions) -> Bool {
+    func compatible(with prev: FieldOptions, selfHasDefault: Bool) -> Bool {
         if self.contains(.required) {
             guard prev.contains(.required) else {
                 return false
             }
         }
         if prev.contains(.required) {
-            guard self.contains(.required) else {
+            guard self.contains(.required) || selfHasDefault else {
                 return false
             }
         }
@@ -589,12 +804,14 @@ public struct Field: Equatable, Codable {
     public let type: EntryType
     public let fieldOptions: FieldOptions
     public let index: UInt?
+    public let defaultValue: Value?
 
-    public init(_ name: String, type: EntryType, fieldOptions: FieldOptions = [], index: UInt? = nil) {
+    public init(_ name: String, type: EntryType, fieldOptions: FieldOptions = [], index: UInt? = nil, defaultValue: Value? = nil) {
         self.name = name
         self.type = type
         self.fieldOptions = fieldOptions
         self.index = index
+        self.defaultValue = defaultValue
     }
 }
 
@@ -664,6 +881,10 @@ enum ValidationError: Error, Equatable {
     case dupplicateNodes(names: [String])
     case unresolvedReferences(names: [String])
     case fieldsWithInvalidOptions(nodeName: String, fieldNames: [String])
+    case fieldsWithInvalidDefaults(nodeName: String, fieldNames: [String])
+    case keyFieldCannotHaveDefaultValue(nodeName: String, fieldName: String)
+    case missingPrefabFields(nodeName: String, fieldNames: [String])
+    case invalidPrefabFields(nodeName: String, fieldNames: [String])
     case nodeError(nodeName: String, error: Node.NodeError)
     case collidingFieldNames(nodeName: String, fieldNames: [String])
     case enumOvercapacity(enumName: String)
@@ -745,6 +966,7 @@ public enum CompatibilityError: Error, Equatable {
     case removedField(nodeName: String, fieldName: String)
     case changedFieldType(nodeName: String, fieldName: String)
     case typeWasChanged(typeName: String, prevType: String, currentType: String)
+    case typePropertyWasChanged(typeName: String, from: String, to:String)
     case incompatibleFieldOptions(nodeName: String, fieldName: String)
     case changedBitsetProperty(enumName: String)
     case changedCapacity(name: String)
@@ -763,9 +985,17 @@ public func ++(name: String, type: EntryType) -> Field {
 }
 
 public func ++(field: Field, index: UInt) -> Field {
-    Field(field.name, type: field.type, fieldOptions: field.fieldOptions, index: index)
+    Field(field.name, type: field.type, fieldOptions: field.fieldOptions, index: index, defaultValue: field.defaultValue)
 }
 
 public func ++(field: Field, options: FieldOptions) -> Field {
-    Field(field.name, type: field.type, fieldOptions: options, index: field.index)
+    Field(field.name, type: field.type, fieldOptions: options, index: field.index, defaultValue: field.defaultValue)
+}
+
+public func ++(field: Field, defaultValue: Value) -> Field {
+    Field(field.name, type: field.type, fieldOptions: field.fieldOptions, index: field.index, defaultValue: defaultValue)
+}
+
+public func ++(node: Node, prefabs: [String: [String: Value]]) -> Node {
+    return .init(name: node.name, frozen: node.frozen, sparse: node.sparse, fields: node.fields, prefabs: prefabs)
 }

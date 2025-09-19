@@ -1,4 +1,4 @@
-//  Generated with Dagr on 13.08.25.
+//  Generated with Dagr on 24.08.25.
 //  https://github.com/mzaks/dagr
 //
 
@@ -19,7 +19,7 @@ public enum BuilderSamples {
 
     public enum Types: UnionNode, Equatable, CycleAwareEquatable, CycleAwareHashable {
 
-        case Person1(Person1), Person2(Person2), Person3(Person3), Person4(Person4), Person5(Person5), Person6(Person6), Person7(Person7), Person8(Person8), Person9(Person9), Person10(Person10), Person11(Person11)
+        case Person1(Person1), Person2(Person2), Person3(Person3), Person4(Person4), Person5(Person5), Person6(Person6), Person7(Person7), Person8(Person8), Person9(Person9), Person10(Person10), Person11(Person11), Person12(Person12)
 
         public var typeId: UInt64 {
             switch self {
@@ -34,6 +34,7 @@ public enum BuilderSamples {
                 case .Person9: return 8
                 case .Person10: return 9
                 case .Person11: return 10
+                case .Person12: return 11
             }
         }
 
@@ -96,6 +97,11 @@ public enum BuilderSamples {
                         return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
                     }
                     return false
+                case .Person12(let selfValue):
+                    if case .Person12(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
             }
         }
 
@@ -123,6 +129,8 @@ public enum BuilderSamples {
                     selfPerson10.hash(into: &hasher, visited: &visited)
                 case .Person11(let selfPerson11):
                     selfPerson11.hash(into: &hasher, visited: &visited)
+                case .Person12(let selfPerson12):
+                    selfPerson12.hash(into: &hasher, visited: &visited)
             }
         }
 
@@ -194,6 +202,12 @@ public enum BuilderSamples {
                     } else {
                         return .reservedPointer(value: ObjectIdentifier(value), id: 10)
                     }
+                case .Person12(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 11)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 11)
+                    }
             }
         }
 
@@ -264,6 +278,12 @@ public enum BuilderSamples {
                 try reader.seek(by: bidirValue)
                 return try .Person11(BuilderSamples.Person11.with(reader: reader, offset: reader.cursor))
             }
+            if typeId == 11 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .Person12(BuilderSamples.Person12.with(reader: reader, offset: reader.cursor))
+            }
             return nil
         }
     }
@@ -279,6 +299,8 @@ public enum BuilderSamples {
             self.name = name
             self.age = age
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -332,11 +354,15 @@ public enum BuilderSamples {
                 let stringPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(stringPointer))
                 result.name = try reader.readSting()
+            } else {
+                result.name = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let ageOffset = vTable[1] {
                 try reader.seek(by: ageOffset)
                 result.age = try reader.readAndSeekNumeric()
+            } else {
+                result.age = nil
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -356,6 +382,8 @@ public enum BuilderSamples {
             self.name = name
             self.age = age
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -432,6 +460,8 @@ public enum BuilderSamples {
         }
 
 
+
+
         public func apply(builder: Builder) throws -> UInt64 {
             let namePointer = try name.map { try builder.store(string: $0) }
 
@@ -483,11 +513,15 @@ public enum BuilderSamples {
                 let stringPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(stringPointer))
                 result.name = try reader.readSting()
+            } else {
+                result.name = nil
             }
             try reader.seek(to: vTableStartOffest)
             if let ageOffset = vTable[1] {
                 try reader.seek(by: ageOffset)
                 result.age = try reader.readAndSeekNumeric()
+            } else {
+                result.age = nil
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -509,6 +543,9 @@ public enum BuilderSamples {
             self.month = month
             self.year = year
         }
+
+
+        nonisolated(unsafe) public static let millennium = MyDate(day: 1, month: 1, year: 2000)
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -587,6 +624,8 @@ public enum BuilderSamples {
         }
 
 
+
+
         public func apply(builder: Builder) throws -> UInt64 {
             let namePointer = try name.map { try builder.store(string: $0) }
             let datePointer = try date.flatMap { try builder.store(structNode: $0) }
@@ -655,11 +694,15 @@ public enum BuilderSamples {
                 let stringPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(stringPointer))
                 result.name = try reader.readSting()
+            } else {
+                result.name = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let ageOffset = vTable[1] {
                 try reader.seek(by: ageOffset)
                 result.age = try reader.readAndSeekNumeric()
+            } else {
+                result.age = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let dateOffset = vTable[2] {
@@ -668,6 +711,8 @@ public enum BuilderSamples {
                 let datePointer = try reader.readAndSeekSignedLEB()
                 if datePointer < 0 { try reader.seek(to: _pointerOffset) }
                 result.date = try MyDate.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + datePointer))
+            } else {
+                result.date = nil
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -691,6 +736,8 @@ public enum BuilderSamples {
             self.date = date
             self.friend = friend
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -778,11 +825,15 @@ public enum BuilderSamples {
                 let stringPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(stringPointer))
                 result.name = try reader.readSting()
+            } else {
+                result.name = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let ageOffset = vTable[1] {
                 try reader.seek(by: ageOffset)
                 result.age = try reader.readAndSeekNumeric()
+            } else {
+                result.age = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let dateOffset = vTable[2] {
@@ -791,6 +842,8 @@ public enum BuilderSamples {
                 let datePointer = try reader.readAndSeekSignedLEB()
                 if datePointer < 0 { try reader.seek(to: _pointerOffset) }
                 result.date = try MyDate.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + datePointer))
+            } else {
+                result.date = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 3, let friendOffset = vTable[3] {
@@ -799,6 +852,8 @@ public enum BuilderSamples {
                 let friendPointer = try reader.readAndSeekSignedLEB()
                 if friendPointer < 0 { try reader.seek(to: _pointerOffset) }
                 result.friend = try Person5.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + friendPointer))
+            } else {
+                result.friend = nil
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -822,6 +877,8 @@ public enum BuilderSamples {
             self.date = date
             self.friend = friend
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -958,6 +1015,8 @@ public enum BuilderSamples {
         }
 
 
+
+
         public func apply(builder: Builder) throws -> UInt64 {
             let nameListPointer = nameList.isEmpty ? nil : try builder.store(strings: nameList)
             let optionalNameListPointer = optionalNameList.isEmpty ? nil : try builder.store(strings: optionalNameList)
@@ -1034,6 +1093,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.nameList = try reader.readAndSeekStringArray()
+            } else {
+                result.nameList = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let optionalNameListOffset = vTable[1] {
@@ -1041,6 +1102,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.optionalNameList = try reader.readAndSeekStringArrayWithOptionals()
+            } else {
+                result.optionalNameList = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let agesOffset = vTable[2] {
@@ -1048,6 +1111,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.ages = try reader.readAndSeekNumericArray()
+            } else {
+                result.ages = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 3, let optionalAgesOffset = vTable[3] {
@@ -1055,6 +1120,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.optionalAges = try reader.readAndSeekNumericArrayWithOptionals()
+            } else {
+                result.optionalAges = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 4, let datesOffset = vTable[4] {
@@ -1062,6 +1129,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.dates = try reader.readAndSeekStructArray()
+            } else {
+                result.dates = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 5, let friendsOffset = vTable[5] {
@@ -1069,6 +1138,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.friends = try reader.readAndSeekStructArrayWithOptionals()
+            } else {
+                result.friends = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 6, let boolsOffset = vTable[6] {
@@ -1076,6 +1147,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.bools = try reader.readAndSeekBoolArray()
+            } else {
+                result.bools = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 7, let optionalBoolsOffset = vTable[7] {
@@ -1083,6 +1156,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.optionalBools = try reader.readAndSeekBoolArrayWithOptionals()
+            } else {
+                result.optionalBools = []
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -1114,6 +1189,8 @@ public enum BuilderSamples {
             self.bools = bools
             self.optionalBools = optionalBools
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -1265,6 +1342,7 @@ public enum BuilderSamples {
 
         public var value: UInt64 { UInt64(self.rawValue) }
         public static func from(value: UInt64) -> Month? { return Month(rawValue: Int(value)) }
+        public static func tryFrom(value: UInt64) throws -> Month { guard let enumValue = Month(rawValue: Int(value)) else {throw ReaderError.unfittingEnumValue}; return enumValue }
         public static var byteWidth: ByteWidth { .half }
     }
 
@@ -1276,6 +1354,7 @@ public enum BuilderSamples {
 
         public var value: UInt64 { UInt64(self.rawValue) }
         public static func from(value: UInt64) -> Gender? { return Gender(rawValue: Int(value)) }
+        public static func tryFrom(value: UInt64) throws -> Gender { guard let enumValue = Gender(rawValue: Int(value)) else {throw ReaderError.unfittingEnumValue}; return enumValue }
         public static var byteWidth: ByteWidth { .quarter }
     }
 
@@ -1333,6 +1412,8 @@ public enum BuilderSamples {
             self.genders = genders
             self.gendersWithOptional = gendersWithOptional
         }
+
+
 
 
         public func apply(builder: Builder) throws -> UInt64 {
@@ -1411,6 +1492,8 @@ public enum BuilderSamples {
                 try reader.seek(by: monthOffset)
                 let monthValue: UInt8 = try reader.readAndSeekNumeric()
                 result.month = Month.from(value: UInt64(monthValue))
+            } else {
+                result.month = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let monthsOffset = vTable[1] {
@@ -1418,6 +1501,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.months = try reader.readAndSeekEnumArray()
+            } else {
+                result.months = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let monthsWithOptionalOffset = vTable[2] {
@@ -1425,12 +1510,16 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.monthsWithOptional = try reader.readAndSeekEnumArrayWithOptionals()
+            } else {
+                result.monthsWithOptional = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 3, let toppingsOffset = vTable[3] {
                 try reader.seek(by: toppingsOffset)
                 let toppingsValue: UInt8 = try reader.readAndSeekNumeric()
                 result.toppings = Toppings.from(value: UInt64(toppingsValue))
+            } else {
+                result.toppings = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 4, let multipleToppingsOffset = vTable[4] {
@@ -1438,6 +1527,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.multipleToppings = try reader.readAndSeekEnumArray()
+            } else {
+                result.multipleToppings = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 5, let multipleOptionalToppingsOffset = vTable[5] {
@@ -1445,12 +1536,16 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.multipleOptionalToppings = try reader.readAndSeekEnumArrayWithOptionals()
+            } else {
+                result.multipleOptionalToppings = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 6, let genderOffset = vTable[6] {
                 try reader.seek(by: genderOffset)
                 let genderValue: UInt8 = try reader.readAndSeekNumeric()
                 result.gender = Gender.from(value: UInt64(genderValue))
+            } else {
+                result.gender = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 7, let gendersOffset = vTable[7] {
@@ -1458,6 +1553,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.genders = try reader.readAndSeekEnumArray()
+            } else {
+                result.genders = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 8, let gendersWithOptionalOffset = vTable[8] {
@@ -1465,6 +1562,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.gendersWithOptional = try reader.readAndSeekEnumArrayWithOptionals()
+            } else {
+                result.gendersWithOptional = []
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -1571,6 +1670,8 @@ public enum BuilderSamples {
         }
 
 
+
+
         public func apply(builder: Builder) throws -> UInt64 {
             let numberAppliedValue = try number?.apply(builder: builder)
             let numbersPointer = numbers.isEmpty ? nil : try builder.store(unionTypes: numbers)
@@ -1634,6 +1735,8 @@ public enum BuilderSamples {
                 let currentOffset = reader.cursor
                 let value = try reader.readAndSeekLEB()
                 result.number = try VLQ.from(typeId: typeId, value: value, reader: reader, offset: currentOffset)
+            } else {
+                result.number = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let numbersOffset = vTable[1] {
@@ -1641,6 +1744,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.numbers = try reader.readAndSeekUnionTypeArray()
+            } else {
+                result.numbers = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let optionalNumbersOffset = vTable[2] {
@@ -1648,6 +1753,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.optionalNumbers = try reader.readAndSeekUnionTypeArrayWithOptionals()
+            } else {
+                result.optionalNumbers = []
             }
             try reader.seek(to: vTableStartOffest)
 
@@ -1851,6 +1958,8 @@ public enum BuilderSamples {
         }
 
 
+
+
         public func apply(builder: Builder) throws -> UInt64 {
             let personIdAppliedValue = try personId?.apply(builder: builder)
             let personIdsPointer = personIds.isEmpty ? nil : try builder.store(unionTypes: personIds)
@@ -1928,6 +2037,8 @@ public enum BuilderSamples {
                 let currentOffset = reader.cursor
                 let value = try reader.readAndSeekLEB()
                 result.personId = try PersonId.from(typeId: typeId, value: value, reader: reader, offset: currentOffset)
+            } else {
+                result.personId = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 1, let personIdsOffset = vTable[1] {
@@ -1935,6 +2046,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.personIds = try reader.readAndSeekUnionTypeArray()
+            } else {
+                result.personIds = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 2, let optionalPersonIdsOffset = vTable[2] {
@@ -1942,6 +2055,8 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.optionalPersonIds = try reader.readAndSeekUnionTypeArrayWithOptionals()
+            } else {
+                result.optionalPersonIds = []
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 3, let personId2Offset = vTable[3] {
@@ -1950,6 +2065,8 @@ public enum BuilderSamples {
                 let currentOffset = reader.cursor
                 let value = try reader.readAndSeekLEB()
                 result.personId2 = try PersonId2.from(typeId: typeId, value: value, reader: reader, offset: currentOffset)
+            } else {
+                result.personId2 = nil
             }
             try reader.seek(to: vTableStartOffest)
             if vTable.count > 4, let personIds2Offset = vTable[4] {
@@ -1957,6 +2074,163 @@ public enum BuilderSamples {
                 let arrayPointer = try reader.readAndSeekLEB()
                 try reader.seek(by: Int64(arrayPointer))
                 result.personIds2 = try reader.readAndSeekUnionTypeArray()
+            } else {
+                result.personIds2 = []
+            }
+            try reader.seek(to: vTableStartOffest)
+
+            return result
+        }
+
+    }
+
+    public final class Person12: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var name: String! = "John Doe"
+        public var active: Bool? = true
+        public var gender: Gender! = .diverse
+        public var genders1: [Gender] = []
+        public var genders2: [Gender] = [.diverse, .female, .male]
+        public var date: MyDate? = .millennium
+
+        public init() {}
+
+        public init(name: String = "John Doe", active: Bool? = true, gender: Gender = .diverse, genders1: [Gender] = [], genders2: [Gender] = [.diverse, .female, .male], date: MyDate? = .millennium) {
+            self.name = name
+            self.active = active
+            self.gender = gender
+            self.genders1 = genders1
+            self.genders2 = genders2
+            self.date = date
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let namePointer = try builder.store(string: name)
+            let genders1Pointer = genders1.isEmpty ? nil : try builder.store(enums: genders1)
+            let genders2Pointer = genders2.isEmpty ? nil : try builder.store(enums: genders2)
+            let datePointer = try date.flatMap { try builder.store(structNode: $0) }
+
+            var datePointerCursor: UInt64?
+            if let date = date{
+                if let pointer = datePointer {
+                    datePointerCursor = try builder.storeBidirectionalPointer(value: pointer)
+                } else {
+                    datePointerCursor = try builder.reserveFieldPointer(for: date)
+                }
+            }
+            let genders2PointerCursor = try genders2Pointer.map { try builder.storeForwardPointer(value: $0) }
+            let genders1PointerCursor = try genders1Pointer.map { try builder.storeForwardPointer(value: $0) }
+            let genderPointerCursor = try builder.store(enum: gender)
+            let activeValueCursor = try active.map { try builder.store(number: $0 ? UInt8(1) : UInt8(0)) }
+            let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
+
+            return try builder.store(vTable: [namePointerCursor, activeValueCursor, genderPointerCursor, genders1PointerCursor, genders2PointerCursor, datePointerCursor])
+
+        }
+
+
+        public func cycleAwareEquality(other: Person12, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+            let isDateEqual: Bool
+            if let date = date, let otherDate = other.date {
+                isDateEqual = date.cycleAwareEquality(other: otherDate, visited: &visited)
+            } else {
+                isDateEqual = date == other.date
+            }
+
+            return self.name == other.name
+                && self.active == other.active
+                && self.gender == other.gender
+                && self.genders1 == other.genders1
+                && self.genders2 == other.genders2
+                && isDateEqual
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(name)
+            hasher.combine(active)
+            hasher.combine(gender)
+            hasher.combine(genders1)
+            hasher.combine(genders2)
+            date?.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> Person12 {
+            var result: Person12
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let vTable = try reader.readAndSeekVTable()
+            let vTableStartOffest = reader.cursor
+            if vTable.count > 0, let nameOffset = vTable[0] {
+                try reader.seek(by: nameOffset)
+                let stringPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(stringPointer))
+                result.name = try reader.readSting()
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 1, let activeOffset = vTable[1] {
+                try reader.seek(by: activeOffset)
+                result.active = try reader.readAndSeekBool()
+            } else {
+                result.active = nil
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 2, let genderOffset = vTable[2] {
+                try reader.seek(by: genderOffset)
+                let genderValue: UInt8 = try reader.readAndSeekNumeric()
+                result.gender = try Gender.tryFrom(value: UInt64(genderValue))
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 3, let genders1Offset = vTable[3] {
+                try reader.seek(by: genders1Offset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.genders1 = try reader.readAndSeekEnumArray()
+            } else {
+                result.genders1 = []
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 4, let genders2Offset = vTable[4] {
+                try reader.seek(by: genders2Offset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.genders2 = try reader.readAndSeekEnumArray()
+            } else {
+                result.genders2 = []
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 5, let dateOffset = vTable[5] {
+                try reader.seek(by: dateOffset)
+                let _pointerOffset = reader.cursor
+                let datePointer = try reader.readAndSeekSignedLEB()
+                if datePointer < 0 { try reader.seek(to: _pointerOffset) }
+                result.date = try MyDate.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + datePointer))
+            } else {
+                result.date = nil
             }
             try reader.seek(to: vTableStartOffest)
 

@@ -7,6 +7,7 @@ typealias Person8 = BuilderSamples.Person8
 typealias Person9 = BuilderSamples.Person9
 typealias Person10 = BuilderSamples.Person10
 typealias Person11 = BuilderSamples.Person11
+typealias Person12 = BuilderSamples.Person12
 typealias PersonId = BuilderSamples.PersonId
 typealias PersonId2 = BuilderSamples.PersonId2
 
@@ -325,6 +326,20 @@ typealias PersonId2 = BuilderSamples.PersonId2
         let reader = DataReader(data: data)
         let p2 = try Person7.with(reader: reader, offset: UInt64(data.count) - offset)
         #expect(alex == p2)
+    }
+    do {
+        let p1 = Person7(nameList:["P1"])
+        let p2 = Person7(nameList:["P2"])
+        let p3 = Person7(nameList:["P3"])
+        p1.friends = [p2, p3]
+        p2.friends = [p1, p3, p3]
+        p3.friends = [p3, p1, p1]
+        let builder = DataBuilder()
+        let offset = try builder.store(structNode: p1)!
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let _p1 = try Person7.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(_p1 == p1)
     }
     do {
         let p1 = Person7(bools: [true, false, true, false])
@@ -693,6 +708,36 @@ typealias PersonId2 = BuilderSamples.PersonId2
         let data = builder.makeData
         let reader = DataReader(data: data)
         let p2 = try Person11.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(p1 == p2)
+    }
+}
+
+@Test func validateRoundTripPerson12() throws {
+    do {
+        let p1 = Person12()
+        let builder = DataBuilder()
+        let offset = try p1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let p2 = try Person12.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(p1 == p2)
+    }
+    do {
+        let p1 = Person12(name: "Maxim", active: false, gender: .male, genders1: [.female], genders2: [], date: nil)
+        let builder = DataBuilder()
+        let offset = try p1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let p2 = try Person12.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(p1 == p2)
+    }
+    do {
+        let p1 = Person12(name: "Alex", active: nil, gender: .female, genders1: [], genders2: [.male], date: MyDate(day: 1, month: 2, year: 2024))
+        let builder = DataBuilder()
+        let offset = try p1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let p2 = try Person12.with(reader: reader, offset: UInt64(data.count) - offset)
         #expect(p1 == p2)
     }
 }

@@ -309,6 +309,24 @@ import Testing
         }
         Enum("Gender", ["m", "f", "d"])
     }, error: .nodeError(nodeName: "Person", error: .unexpectedIndexStep(index: 2, prevIndex: 0, fieldName: "gender")))
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person", frozen: true) {
+            "name"   ++ .utf8          ++ 0
+            "gender" ++ .ref("Gender") ++ 2
+        }
+        Enum("Gender", ["m", "f", "d"])
+    }, error: .nodeError(nodeName: "Person", error: .unexpectedIndexStep(index: 2, prevIndex: 0, fieldName: "gender")))
+}
+
+@Test func validateDataGraphValidateRandomStepForSparse() throws {
+    try DataGraph("G", rootType: .ref("Person")) {
+        Node("Person", sparse: true) {
+            "name"   ++ .utf8          ++ 12
+            "gender" ++ .ref("Gender") ++ 23
+        }
+        Enum("Gender", ["m", "f", "d"])
+    }.validate()
 }
 
 @Test func validateDataGraphValidateEnumOverCapacity() throws {
@@ -366,6 +384,133 @@ import Testing
     }, error: .unionTypeCollidingNames(unionTypeName: "Address", typeNames: ["postal"]))
 }
 
+@Test func validateDataGraphValidateDefaultValues() throws {
+    try DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "friends" ++ .ref("Person").array
+            "address" ++ .ref("Address") ++ .unionRef("email", .string("xx@aa.com"))
+        }
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }.validate()
+
+    try DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "friends" ++ .ref("Person").array ++ .array([.ref("p1"), .ref("p2")])
+            "addressList" ++ .ref("Address").arrayWithOptionals ++ .array([.unionRef("person", .ref("p1")), .nil, .unionRef("email", .string("foo@bar.baz"))])
+
+        } ++ [
+            "p1": [
+                "name": .string("Max"),
+                "gender": .ref("m")
+            ],
+            "p2": [
+                "name": .string("Maxime"),
+                "gender": .ref("f")
+            ]
+        ]
+
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }.validate()
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("a")
+            "friends" ++ .ref("Person").array
+            "address" ++ .ref("Address") ++ .unionRef("email", .string("xx@aa.com"))
+        }
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }, error: .fieldsWithInvalidDefaults(nodeName: "Person", fieldNames: ["gender"]))
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("a")
+            "friends" ++ .ref("Person").array
+            "address" ++ .ref("Address") ++ .unionRef("email", .int(45))
+        }
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }, error: .fieldsWithInvalidDefaults(nodeName: "Person", fieldNames: ["address", "gender"]))
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "age" ++ .i8 ++ .bool(true)
+            "active" ++ .bool ++ .string("true")
+        }
+        Enum("Gender", ["m", "f", "d"])
+    }, error: .fieldsWithInvalidDefaults(nodeName: "Person", fieldNames: ["active", "age"]))
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .key ++ .nil
+            "gender" ++ .ref("Gender") ++ .nil
+            "age" ++ .i8 ++ .nil
+            "active" ++ .bool ++ .required ++ .nil
+        }
+        Enum("Gender", ["m", "f", "d"])
+    }, error: .fieldsWithInvalidDefaults(nodeName: "Person", fieldNames: ["active", "name"]))
+}
+
+@Test func validateDataGraphValidatePrefabs() throws {
+    try DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .required ++ .string("Anonymous")
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "friends" ++ .ref("Person").array
+            "address" ++ .ref("Address") ++ .unionRef("email", .string("xx@aa.com"))
+        } ++ [
+            "p1": [:],
+            "p2": ["name": .string("Max"), "gender": .ref("m")]
+        ]
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }.validate()
+
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .required
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "age" ++ .i8
+            "active" ++ .bool
+        } ++ [
+            "p1": [:],
+        ]
+        Enum("Gender", ["m", "f", "d"])
+    }, error: .missingPrefabFields(nodeName: "Person", fieldNames: ["p1.name"]))
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .required
+            "gender" ++ .ref("Gender") ++ .ref("d")
+            "age" ++ .i8
+            "active" ++ .bool
+        } ++ [
+            "p1": ["name": .ref("hello")],
+            "p2": ["name": .string("Max"), "gender": .ref("a")]
+        ]
+        Enum("Gender", ["m", "f", "d"])
+    }, error: .invalidPrefabFields(nodeName: "Person", fieldNames: ["p1.name", "p2.gender"]))
+}
+
+@Test func validatekeyFieldCannotHaveDefaultValue() throws {
+    assert(DataGraph("G", rootType: .ref("Person")) {
+        Node("Person") {
+            "name" ++ .utf8 ++ .key ++ .string("Max")
+            "age" ++ .i8
+        }
+
+    }, error: .keyFieldCannotHaveDefaultValue(nodeName: "Person", fieldName: "name"))
+}
+
 @Test func validateDataGraphOnCycle() throws {
     try DataGraph("G", rootType: .ref("Person")) {
         Node("Person") {
@@ -378,6 +523,7 @@ import Testing
         UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
     }.validate()
 }
+
 
 private func assert(_ g: DataGraph, error: ValidationError) {
     #expect(performing: {

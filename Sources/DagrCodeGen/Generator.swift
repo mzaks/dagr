@@ -306,6 +306,7 @@ func generate(enum node: Enum, with indentation: Indentation) -> String {
         \(caseStatementsEnum(cases: node.cases, indentation: indentation))
             public var value: UInt64 { UInt64(self.rawValue) }
             public static func from(value: UInt64) -> \(node.name)? { return \(node.name)(rawValue: Int(value)) }
+            public static func tryFrom(value: UInt64) throws -> \(node.name) { guard let enumValue = \(node.name)(rawValue: Int(value)) else {throw ReaderError.unfittingEnumValue}; return enumValue }
             public static var byteWidth: ByteWidth { \(byteWidth(capacity: node.capacity)) }
         }
         """.indent(with: indentation)
@@ -318,9 +319,9 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
         var result = ""
         for field in fields {
             if field.fieldOptions == .deprecated {
-                result.append("public private(set)var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type))\n")
+                result.append("public private(set)var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
             } else {
-                result.append("public var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type))\n")
+                result.append("public var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
             }
         }
         return result.indent(with: indentation)
@@ -339,14 +340,16 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
                 continue
             }
             result.append("\(field.name): \(typeName(entryType: field.type))")
-            if field.fieldOptions.isRequired == false {
-                switch field.type {
-                case .array, .arrayWithOptionals:
-                    result.append("")
-                default:
-                    result.append("?")
+            if field.fieldOptions.isRequired == false || field.defaultValue != nil {
+                if field.fieldOptions.isRequired == false {
+                    switch field.type {
+                    case .array, .arrayWithOptionals:
+                        result.append("")
+                    default:
+                        result.append("?")
+                    }
                 }
-                result.append(" = \(entryTypeDefault(entry: field.type))")
+                result.append(" = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))")
             }
             if index < fields.count - 1 {
                 result.append(", ")
@@ -357,6 +360,22 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
         result.append("}\n")
         return result.indent(with: indentation)
     }
+    func staticFields(prefabs: [String: [String: Value]], indentation: Indentation) -> String {
+        var results: [String] = []
+        for (prefabName, prefabValues) in prefabs {
+            var statement = "nonisolated(unsafe) public static let \(prefabName) = \(node.name)("
+            var arguments = [String]()
+            for field in node.fields {
+                if let value = prefabValues[field.name] {
+                    arguments.append("\(field.name): \(entryTypeDefault(entry: field.type, defaultValue: value))")
+                }
+            }
+            statement.append(arguments.joined(separator: ", "))
+            statement.append(")")
+            results.append(statement)
+        }
+        return results.joined(separator: "\n").indent(with: indentation)
+    }
     return """
     public final class \(node.name): Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
 
@@ -364,6 +383,8 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
         public init() {}
     
     \(constructor(node.fields, indentation: indentation))
+    
+    \(staticFields(prefabs: node.prefabs, indentation: indentation))
 
     \(generateApplyFunction(struct: node, indentation: indentation, lookup: lookup))
 
@@ -748,12 +769,43 @@ fileprivate func fieldType(field: Field) -> String {
     return result
 }
 
-fileprivate func entryTypeDefault(entry: EntryType) -> String {
-    switch entry {
-    case .array, .arrayWithOptionals:
-        return "[]"
-    default:
+fileprivate func entryTypeDefault(entry: EntryType, defaultValue: Value?) -> String {
+    switch defaultValue {
+    case .bool(let bool):
+        return "\(bool)"
+    case .int(let int):
+        return "\(int)"
+    case .float(let double):
+        return "\(double)"
+    case .string(let string):
+        return "\"\(string)\""
+    case .ref(let string):
+        return ".\(string)"
+    case .unionRef(let typeName, let value):
+        return "\(typeName).\(value)"
+    case .array(let array):
+        switch entry {
+        case .array(let arrayType):
+            let elements = array.map { entryTypeDefault(entry: arrayType, defaultValue: $0) }.joined(separator: ", ")
+            return "[\(elements)]"
+        case .arrayWithOptionals(let arrayType):
+            let elements = array.map { entryTypeDefault(entry: arrayType, defaultValue: $0) }.joined(separator: ", ")
+            return "[\(elements)]"
+        default:
+            fatalError("Default array value for non-array entry type \(entry.typeName)")
+        }
+
+    case .b64Data(let value):
+        return "Data(base64Encoded: \(value))"
+    case .nil:
         return "nil"
+    case nil:
+        switch entry {
+        case .array, .arrayWithOptionals:
+            return "[]"
+        default:
+            return "nil"
+        }
     }
 }
 
@@ -1176,7 +1228,11 @@ fileprivate func generateWithReader(struct node: Node, indentation: Indentation,
                 let nodeType = lookup[typeName]!
                 if let enumType = nodeType as? Enum {
                     result.append(("let \(field.name)Value\(enumReadStatementType(enumType: enumType))", indentation + 1))
-                    result.append(("result.\(field.name) = \(typeName).from(value: UInt64(\(field.name)Value))", indentation + 1))
+                    if field.fieldOptions.isRequired {
+                        result.append(("result.\(field.name) = try \(typeName).tryFrom(value: UInt64(\(field.name)Value))", indentation + 1))
+                    } else {
+                        result.append(("result.\(field.name) = \(typeName).from(value: UInt64(\(field.name)Value))", indentation + 1))
+                    }
                 } else if nodeType is Node {
                     result.append(("let _pointerOffset = reader.cursor", indentation + 1))
                     result.append(("let \(field.name)Pointer = try reader.readAndSeekSignedLEB()", indentation + 1))
@@ -1231,6 +1287,17 @@ fileprivate func generateWithReader(struct node: Node, indentation: Indentation,
                     result.append(("try reader.seek(to: currentCursor)", indentation + 1))
                 }
             }
+            if node.frozen == false {
+                result.append(("} else {", indentation))
+                if field.fieldOptions == .deprecated {
+                    result.append(("// field is deprecated, keep the default value", indentation + 1))
+                } else if field.fieldOptions.isRequired {
+                    result.append(("throw ReaderError.requiredFieldIsMissing", indentation + 1))
+                } else {
+                    result.append(("result.\(field.name) = \(entryTypeDefault(entry: field.type, defaultValue: nil))", indentation + 1))
+                }
+            }
+
             result.append(("}", indentation))
             if node.frozen == false {
                 result.append(("try reader.seek(to: vTableStartOffest)", indentation))

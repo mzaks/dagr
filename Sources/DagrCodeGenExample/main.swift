@@ -23,6 +23,7 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 ("Person9", .ref("Person9")),
                 ("Person10", .ref("Person10")),
                 ("Person11", .ref("Person11")),
+                ("Person12", .ref("Person12")),
             ])
             Node("Person1") {
                 "name" ++ .utf8
@@ -40,7 +41,13 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 "day"   ++ .u8  ++ .required
                 "month" ++ .u8  ++ .required
                 "year"  ++ .u16 ++ .required
-            }
+            } ++ [
+                "millennium": [
+                    "day": .int(1),
+                    "month": .int(1),
+                    "year": .int(2000)
+                ]
+            ]
             Node("Person4") {
                 "name" ++ .utf8
                 "age"  ++ .u8
@@ -118,6 +125,15 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 "optionalPersonIds" ++ .ref("PersonId").arrayWithOptionals
                 "personId2"         ++ .ref("PersonId2")
                 "personIds2"        ++ .ref("PersonId2").array
+            }
+
+            Node("Person12") {
+                "name"      ++ .utf8                ++ .required    ++ .string("John Doe")
+                "active"    ++ .bool                                ++ .bool(true)
+                "gender"    ++ .ref("Gender")       ++ .required    ++ .ref("diverse")
+                "genders1"  ++ .ref("Gender").array                 ++ .array([])
+                "genders2"  ++ .ref("Gender").array                 ++ .array([.ref("diverse"), .ref("female"), .ref("male")])
+                "date"      ++ .ref("MyDate")                       ++ .ref("millennium") 
             }
         },
         path: outputUrl
