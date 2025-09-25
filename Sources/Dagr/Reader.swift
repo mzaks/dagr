@@ -30,7 +30,7 @@ import Foundation
 
 public enum ReaderError: Error {
     case badOffset(Int64)
-    case couldNotReadNumericType(any Numeric.Type)
+    case couldNotReadNumericType(String)
     case unfinishedLEB
     case unfittingString
     case unfittingNumericType
@@ -126,7 +126,7 @@ public class DataReader: Reader {
 
         data.copyBytes(to: buffer, from: range)
         guard let value = buffer.first else {
-            throw ReaderError.couldNotReadNumericType(T.self)
+            throw ReaderError.couldNotReadNumericType(String(describing: T.self))
         }
         return value
     }
