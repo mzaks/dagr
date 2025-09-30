@@ -8,8 +8,6 @@ let package = Package(
     products: [
         .library(name: "Dagr", targets: ["Dagr"]),
         .library(name: "DagrCodeGen", targets: ["DagrCodeGen"]),
-        .plugin(name: "DagrCodeGenPlugin", targets: ["DagrCodeGenPlugin"]),
-        .executable(name: "DagrCodeGenExample", targets: ["DagrCodeGenExample"]),
     ],
     targets: [
         .target(name: "Dagr"),
