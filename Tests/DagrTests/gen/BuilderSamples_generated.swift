@@ -1,4 +1,4 @@
-//  Generated with Dagr on 24.08.25.
+//  Generated with Dagr on 01.10.25.
 //  https://github.com/mzaks/dagr
 //
 
@@ -38,7 +38,7 @@ public enum BuilderSamples {
             }
         }
 
-        public static var byteWidth: ByteWidth { .half }
+        public static var byteWidth: ByteWidth { .two }
 
         public func cycleAwareEquality(other: Self, visited: inout Set<ObjectIdentifierPair>) -> Bool {
             switch self {

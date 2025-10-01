@@ -24,7 +24,7 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 ("Person10", .ref("Person10")),
                 ("Person11", .ref("Person11")),
                 ("Person12", .ref("Person12")),
-            ])
+            ], capacity: 1000)
             Node("Person1") {
                 "name" ++ .utf8
                 "age"  ++ .u8
@@ -136,7 +136,8 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 "date"      ++ .ref("MyDate")                       ++ .ref("millennium") 
             }
         },
-        path: outputUrl
+        path: outputUrl,
+        fileNameSuffix: "_generated"
     )
 }
 

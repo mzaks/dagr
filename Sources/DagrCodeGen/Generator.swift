@@ -68,7 +68,7 @@ public func +(indentation: Indentation, value: Int) -> Indentation {
     Indentation(string: indentation.string, depth: indentation.depth + UInt(value))
 }
 
-public func generate(graph:DataGraph, path: URL, with indentation: Indentation = "    ") throws {
+public func generate(graph:DataGraph, path: URL, with indentation: Indentation = "    ", fileNameSuffix: String = "") throws {
     try graph.validate()
 
     try validateCompatibility(graph: graph, path: path)
@@ -229,8 +229,8 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
     \(types.joined(separator: "\n"))
     }
     """
-
-    let codeFileURL = path.appendingPathComponent("\(graphName).swift")
+    let fileName = "\(graphName)\(fileNameSuffix).swift"
+    let codeFileURL = path.appendingPathComponent(fileName)
     try code.write(to: codeFileURL, atomically: true, encoding: .utf8)
     let data = try JSONEncoder().encode(GenerationProtocol(graph: graph))
     let protocolFileURL = path.appendingPathComponent("\(graphName)_\(UInt64(Date().timeIntervalSince1970)).json")
