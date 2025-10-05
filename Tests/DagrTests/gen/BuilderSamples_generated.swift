@@ -1,9 +1,10 @@
-//  Generated with Dagr on 01.10.25.
+//  Generated with Dagr on 04.10.25.
 //  https://github.com/mzaks/dagr
 //
 
-import Foundation
 import Dagr
+import Foundation
+import FoundationNodes
 
 public enum BuilderSamples {
     public static func encode(root: [Types]) throws -> Data {
@@ -2092,16 +2093,18 @@ public enum BuilderSamples {
         public var genders1: [Gender] = []
         public var genders2: [Gender] = [.diverse, .female, .male]
         public var date: MyDate? = .millennium
+        public var id: FoundationNode.UUID? = nil
 
         public init() {}
 
-        public init(name: String = "John Doe", active: Bool? = true, gender: Gender = .diverse, genders1: [Gender] = [], genders2: [Gender] = [.diverse, .female, .male], date: MyDate? = .millennium) {
+        public init(name: String = "John Doe", active: Bool? = true, gender: Gender = .diverse, genders1: [Gender] = [], genders2: [Gender] = [.diverse, .female, .male], date: MyDate? = .millennium, id: FoundationNode.UUID? = nil) {
             self.name = name
             self.active = active
             self.gender = gender
             self.genders1 = genders1
             self.genders2 = genders2
             self.date = date
+            self.id = id
         }
 
 
@@ -2112,7 +2115,16 @@ public enum BuilderSamples {
             let genders1Pointer = genders1.isEmpty ? nil : try builder.store(enums: genders1)
             let genders2Pointer = genders2.isEmpty ? nil : try builder.store(enums: genders2)
             let datePointer = try date.flatMap { try builder.store(structNode: $0) }
+            let idPointer = try id.flatMap { try builder.store(structNode: $0) }
 
+            var idPointerCursor: UInt64?
+            if let id = id{
+                if let pointer = idPointer {
+                    idPointerCursor = try builder.storeBidirectionalPointer(value: pointer)
+                } else {
+                    idPointerCursor = try builder.reserveFieldPointer(for: id)
+                }
+            }
             var datePointerCursor: UInt64?
             if let date = date{
                 if let pointer = datePointer {
@@ -2127,7 +2139,7 @@ public enum BuilderSamples {
             let activeValueCursor = try active.map { try builder.store(number: $0 ? UInt8(1) : UInt8(0)) }
             let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
 
-            return try builder.store(vTable: [namePointerCursor, activeValueCursor, genderPointerCursor, genders1PointerCursor, genders2PointerCursor, datePointerCursor])
+            return try builder.store(vTable: [namePointerCursor, activeValueCursor, genderPointerCursor, genders1PointerCursor, genders2PointerCursor, datePointerCursor, idPointerCursor])
 
         }
 
@@ -2144,6 +2156,12 @@ public enum BuilderSamples {
             } else {
                 isDateEqual = date == other.date
             }
+            let isIdEqual: Bool
+            if let id = id, let otherId = other.id {
+                isIdEqual = id.cycleAwareEquality(other: otherId, visited: &visited)
+            } else {
+                isIdEqual = id == other.id
+            }
 
             return self.name == other.name
                 && self.active == other.active
@@ -2151,6 +2169,7 @@ public enum BuilderSamples {
                 && self.genders1 == other.genders1
                 && self.genders2 == other.genders2
                 && isDateEqual
+                && isIdEqual
 
         }
 
@@ -2167,6 +2186,7 @@ public enum BuilderSamples {
             hasher.combine(genders1)
             hasher.combine(genders2)
             date?.hash(into: &hasher, visited: &visited)
+            id?.hash(into: &hasher, visited: &visited)
 
         }
 
@@ -2231,6 +2251,16 @@ public enum BuilderSamples {
                 result.date = try MyDate.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + datePointer))
             } else {
                 result.date = nil
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 6, let idOffset = vTable[6] {
+                try reader.seek(by: idOffset)
+                let _pointerOffset = reader.cursor
+                let idPointer = try reader.readAndSeekSignedLEB()
+                if idPointer < 0 { try reader.seek(to: _pointerOffset) }
+                result.id = try FoundationNode.UUID.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + idPointer))
+            } else {
+                result.id = nil
             }
             try reader.seek(to: vTableStartOffest)
 

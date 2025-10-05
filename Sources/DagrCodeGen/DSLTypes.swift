@@ -822,21 +822,34 @@ public struct FieldBuilder {
     }
 }
 
+public struct ImportedGraph: Codable {
+    let graph: DataGraph
+    let packageName: String?
+    
+    public init(graph: DataGraph, packageName: String? = nil) {
+        self.graph = graph
+        self.packageName = packageName
+    }
+}
+
 public struct DataGraph: Codable {
     let name: String
     let rootType: EntryType
     let nodeTypes: [NodeType]
+    let imports: [ImportedGraph]
 
-    public init(_ name: String, rootType: EntryType, @NodeTypeBuilder types: () -> [NodeType]) {
+    public init(_ name: String, rootType: EntryType, imports: [ImportedGraph] = [], @NodeTypeBuilder types: () -> [NodeType]) {
         self.name = name
         self.rootType = rootType
         self.nodeTypes = types()
+        self.imports = imports
     }
 
     enum CodingKeys: String, CodingKey {
         case name
         case rootType
         case nodeTypes
+        case imports
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -852,6 +865,10 @@ public struct DataGraph: Codable {
             } else if let type = type as? UnionType {
                 try nodeTypesC.encode(type)
             }
+        }
+        var nodeImportsC = c.nestedUnkeyedContainer(forKey: .imports)
+        for imp in imports {
+            try nodeImportsC.encode(imp)
         }
     }
 
@@ -872,6 +889,12 @@ public struct DataGraph: Codable {
             }
         }
         self.nodeTypes = nodeTypes
+        var imports = [ImportedGraph]()
+        var importTypesC = try c.nestedUnkeyedContainer(forKey: .imports)
+        while !importTypesC.isAtEnd {
+            imports.append(try importTypesC.decode(ImportedGraph.self))
+        }
+        self.imports = imports
     }
 }
 
@@ -900,7 +923,7 @@ extension DataGraph {
     }
 
     var unresolvedTypeReferences: Set<String> {
-        let lookupTable = nodeTypeLookupTable.keys
+        let lookupTable = nodeTypeLookupTableWithImports.keys
         var result = Set<String>()
         for nodeType in nodeTypes {
             if let s = nodeType as? Node {
@@ -923,12 +946,44 @@ extension DataGraph {
     var nodeTypeLookupTable: [String: NodeType] {
         Dictionary(grouping: self.nodeTypes) { $0.name }.mapValues{ $0[0] }
     }
+    
+    var importedTypeLookupTable: [String: NodeType] {
+        var result = [String: NodeType]()
+        for importedGraph in imports {
+            let lookup = importedGraph.graph.nodeTypeLookupTable
+            result = result.merging(lookup) { $1 }
+        }
+        return result
+    }
+    
+    var nodeTypeLookupTableWithImports: [String: NodeType] {
+        return importedTypeLookupTable.merging(nodeTypeLookupTable) { $1 }
+    }
+    
+    var importedNodeNameResolutionTable: [String: String] {
+        var result = [String: String]()
+        for importedGraph in imports {
+            for nodeName in importedGraph.graph.nodeTypeLookupTable.keys {
+                result[nodeName] = "\(importedGraph.graph.name).\(nodeName)"
+            }
+        }
+        for nodeName in nodeTypeLookupTable.keys {
+            result.removeValue(forKey: nodeName)
+        }
+        return result
+    }
+    
+    var packagesToImport: [String] {
+        var result = ["Dagr", "Foundation"]
+        result.append(contentsOf: imports.compactMap{ $0.packageName })
+        return result.sorted()
+    }
 
     func validate() throws {
         guard name.isEmpty == false else {
             throw ValidationError.graphNameIsNotSet
         }
-        let lookup = nodeTypeLookupTable
+        let lookup = nodeTypeLookupTableWithImports
         guard rootType.isValidReference(lookup.keys) else {
             throw ValidationError.rootTypeIsNotValidReference
         }
@@ -951,13 +1006,22 @@ extension DataGraph {
     }
 
     func checkCompatiblityWith(previous: DataGraph) throws {
-        let lookup = self.nodeTypeLookupTable
-        let prevLookup = previous.nodeTypeLookupTable
+        let lookup = self.nodeTypeLookupTableWithImports
+        let prevLookup = previous.nodeTypeLookupTableWithImports
         var visited = Set<String>()
 
         guard try rootType.compatible(with: previous.rootType, strict: true, selfLookup: lookup, otherLookup: prevLookup, visited: &visited) else {
             throw CompatibilityError.differentRootTypes
         }
+    }
+}
+
+extension DataGraph {
+    var imported : ImportedGraph {
+        return ImportedGraph(graph: self)
+    }
+    func importedFrom(_ packageName: String) -> ImportedGraph {
+        return ImportedGraph(graph: self, packageName: packageName)
     }
 }
 

@@ -74,22 +74,23 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
     try validateCompatibility(graph: graph, path: path)
 
     let graphName = graph.name
-    let lookup = graph.nodeTypeLookupTable
+    let lookup = graph.nodeTypeLookupTableWithImports
+    let nodeNameResolution = graph.importedNodeNameResolutionTable
     var types = [String]()
     for type in graph.nodeTypes {
         if let e = type as? Enum {
             types.append(generate(enum: e, with: indentation + 1))
         } else if let u = type as? UnionType {
-            types.append(generate(unionType: u, with: indentation + 1, lookup: lookup, graphName: graphName))
+            types.append(generate(unionType: u, with: indentation + 1, lookup: lookup, nodeNameResolution: nodeNameResolution, graphName: graphName))
         } else if let s = type as? Node {
-            types.append(generate(struct: s, with: indentation + 1, lookup: lookup))
+            types.append(generate(struct: s, with: indentation + 1, lookup: lookup, nodeNameResolution: nodeNameResolution))
         } else {
             fatalError("Unexpected type")
         }
     }
-    func generateEncodeMethod(root: EntryType, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func generateEncodeMethod(root: EntryType, indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
-        result.append("public static func encode(root: \(typeName(entryType: root))) throws -> Data {".expressionIndent(with: indentation))
+        result.append("public static func encode(root: \(typeName(entryType: root, nodeNameResolution: nodeNameResolution))) throws -> Data {".expressionIndent(with: indentation))
         result.append("let builder = DataBuilder()".expressionIndent(with: indentation + 1))
         var withOptionals = true
         switch root {
@@ -110,7 +111,7 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
                 result.append("_ = try builder.store(enum: root)".expressionIndent(with: indentation + 1))
             } else if type is UnionType {
                 result.append("let unionType = try root.apply(builder: builder)".expressionIndent(with: indentation + 1))
-                result.append("_ = try builder.store(unionType: root)".expressionIndent(with: indentation + 1))
+                result.append("_ = try builder.store(unionType: unionType)".expressionIndent(with: indentation + 1))
             } else {
                 fatalError("Unexpected type \(type)")
             }
@@ -148,9 +149,9 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
         result.append("}".expressionIndent(with: indentation))
         return result.joined(separator: "\n")
     }
-    func generateDecodeMethod(root: EntryType, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func generateDecodeMethod(root: EntryType, indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
-        result.append("public static func decode(data: Data) throws -> \(typeName(entryType: root)) {".expressionIndent(with: indentation))
+        result.append("public static func decode(data: Data) throws -> \(typeName(entryType: root, nodeNameResolution: nodeNameResolution)) {".expressionIndent(with: indentation))
         result.append("let reader = DataReader(data: data)".expressionIndent(with: indentation + 1))
 
         var withOptionals = true
@@ -174,7 +175,10 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
                 result.append("let typeId = try reader.readAndSeekLEB()".expressionIndent(with: indentation + 1))
                 result.append("let currentOffset = reader.cursor".expressionIndent(with: indentation + 1))
                 result.append("let value = try reader.readAndSeekLEB()".expressionIndent(with: indentation + 1))
-                result.append("return try \(typeName).from(typeId: typeId, value: value, reader: reader, offset: currentOffset)".expressionIndent(with: indentation + 1))
+                result.append("guard let unionType = try \(typeName).from(typeId: typeId, value: value, reader: reader, offset: currentOffset) else {".expressionIndent(with: indentation + 1))
+                result.append("throw ReaderError.unexpectedUnionCase".expressionIndent(with: indentation + 2))
+                result.append("}".expressionIndent(with: indentation + 1))
+                result.append("return unionType".expressionIndent(with: indentation + 1))
             } else {
                 fatalError("Unexpected type \(type)")
             }
@@ -218,8 +222,7 @@ public func generate(graph:DataGraph, path: URL, with indentation: Indentation =
     //  https://github.com/mzaks/dagr
     //
 
-    import Foundation
-    import Dagr
+    \(graph.packagesToImport.map{"import \($0)"}.joined(separator: "\n"))
 
     public enum \(graphName) {
     \(generateEncodeMethod(root:graph.rootType, indentation: indentation + 1, lookup: graph.nodeTypeLookupTable))
@@ -314,14 +317,14 @@ func generate(enum node: Enum, with indentation: Indentation) -> String {
 
 }
 
-func generate(struct node: Node, with indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+func generate(struct node: Node, with indentation: Indentation, lookup: [String: NodeType], nodeNameResolution: [String: String]) -> String {
     func fields(_ fields: [Field], indentation: Indentation) -> String {
         var result = ""
         for field in fields {
             if field.fieldOptions == .deprecated {
-                result.append("public private(set)var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
+                result.append("public private(set)var \(field.name): \(fieldType(field: field, nodeNameResolution: nodeNameResolution)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
             } else {
-                result.append("public var \(field.name): \(fieldType(field: field)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
+                result.append("public var \(field.name): \(fieldType(field: field, nodeNameResolution: nodeNameResolution)) = \(entryTypeDefault(entry: field.type, defaultValue: field.defaultValue))\n")
             }
         }
         return result.indent(with: indentation)
@@ -339,7 +342,7 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
             if field.fieldOptions == .deprecated {
                 continue
             }
-            result.append("\(field.name): \(typeName(entryType: field.type))")
+            result.append("\(field.name): \(typeName(entryType: field.type, nodeNameResolution: nodeNameResolution))")
             if field.fieldOptions.isRequired == false || field.defaultValue != nil {
                 if field.fieldOptions.isRequired == false {
                     switch field.type {
@@ -392,16 +395,16 @@ func generate(struct node: Node, with indentation: Indentation, lookup: Dictiona
     
     \(generateHashFunctions(struct: node, indentation: indentation, lookup: lookup))
 
-    \(generateWithReader(struct: node, indentation: indentation, lookup: lookup))
+    \(generateWithReader(struct: node, indentation: indentation, lookup: lookup, nodeNameResolution: nodeNameResolution))
     }
     """.indent(with: indentation)
 }
 
-func generate(unionType node: UnionType, with indentation: Indentation, lookup: Dictionary<String, NodeType>, graphName: String) -> String {
+func generate(unionType node: UnionType, with indentation: Indentation, lookup: [String: NodeType], nodeNameResolution: [String: String], graphName: String) -> String {
     func genCases(types: [TypePair], indentation: Indentation) -> String {
         var result = [String]()
         for t in types {
-            result.append("\(t.name)(\(typeName(entryType: t.type)))")
+            result.append("\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution)))")
         }
         return result.joined(separator: ", ")
     }
@@ -412,7 +415,7 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
         }
         return result.joined(separator: "\n")
     }
-    func genCycleAwareEquality(types: [TypePair], indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func genCycleAwareEquality(types: [TypePair], indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
         for t in types {
             result.append("case .\(t.name)(let selfValue):".expressionIndent(with: indentation))
@@ -450,7 +453,7 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
         return result.joined(separator: "\n")
     }
 
-    func genCycleAwareHashable(types: [TypePair], indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func genCycleAwareHashable(types: [TypePair], indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
         for t in types {
             switch t.type {
@@ -488,7 +491,7 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
         return result.joined(separator: "\n")
     }
 
-    func genApplyCase(types: [TypePair], indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func genApplyCase(types: [TypePair], indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
 
         for (index, t) in types.enumerated() {
@@ -571,7 +574,7 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
         }
         return result.joined(separator: "\n")
     }
-    func genFromCase(types: [TypePair], indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+    func genFromCase(types: [TypePair], indentation: Indentation, lookup: [String: NodeType]) -> String {
         var result = [String]()
 
         for (index, t) in types.enumerated() {
@@ -579,15 +582,15 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
             result.append("if typeId == \(index) {".expressionIndent(with: indentation))
             switch t.type {
             case .u8, .u16, .u32, .u64:
-                result.append("return .\(t.name)(\(typeName(entryType: t.type))(value))".expressionIndent(with: indentation + 1))
+                result.append("return .\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution))(value))".expressionIndent(with: indentation + 1))
             case .i8:
-                result.append("return .\(t.name)(\(typeName(entryType: t.type))(bitPattern: UInt8(value)))".expressionIndent(with: indentation + 1))
+                result.append("return .\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution))(bitPattern: UInt8(value)))".expressionIndent(with: indentation + 1))
             case .i16:
-                result.append("return .\(t.name)(\(typeName(entryType: t.type))(bitPattern: UInt16(value)))".expressionIndent(with: indentation + 1))
+                result.append("return .\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution))(bitPattern: UInt16(value)))".expressionIndent(with: indentation + 1))
             case .i32, .f32:
-                result.append("return .\(t.name)(\(typeName(entryType: t.type))(bitPattern: UInt32(value)))".expressionIndent(with: indentation + 1))
+                result.append("return .\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution))(bitPattern: UInt32(value)))".expressionIndent(with: indentation + 1))
             case .i64, .f64:
-                result.append("return .\(t.name)(\(typeName(entryType: t.type))(bitPattern: value))".expressionIndent(with: indentation + 1))
+                result.append("return .\(t.name)(\(typeName(entryType: t.type, nodeNameResolution: nodeNameResolution))(bitPattern: value))".expressionIndent(with: indentation + 1))
             case .bool:
                 result.append("return .\(t.name)(value == 1 ? true : false)".expressionIndent(with: indentation + 1))
             case .utf8:
@@ -720,7 +723,7 @@ fileprivate func byteWidthBitSet(capacity: UInt16) -> String {
 }
 
 
-fileprivate func typeName(entryType: EntryType) -> String {
+fileprivate func typeName(entryType: EntryType, nodeNameResolution: [String: String]) -> String {
     switch entryType {
     case .u8:
         return "UInt8"
@@ -749,16 +752,19 @@ fileprivate func typeName(entryType: EntryType) -> String {
     case .data:
         return "Data"
     case .ref(let name):
+        if let importedName = nodeNameResolution[name] {
+            return importedName
+        }
         return name
     case .array(let entryType):
-        return "[\(typeName(entryType: entryType))]"
+        return "[\(typeName(entryType: entryType, nodeNameResolution: nodeNameResolution))]"
     case .arrayWithOptionals(let entryType):
-        return "[\(typeName(entryType: entryType))?]"
+        return "[\(typeName(entryType: entryType, nodeNameResolution: nodeNameResolution))?]"
     }
 }
 
-fileprivate func fieldType(field: Field) -> String {
-    var result = typeName(entryType: field.type)
+fileprivate func fieldType(field: Field, nodeNameResolution: [String: String]) -> String {
+    var result = typeName(entryType: field.type, nodeNameResolution: nodeNameResolution)
     switch field.type {
     case .array, .arrayWithOptionals:
         break
@@ -809,7 +815,7 @@ fileprivate func entryTypeDefault(entry: EntryType, defaultValue: Value?) -> Str
     }
 }
 
-fileprivate func generateApplyFunction(struct node: Node, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+fileprivate func generateApplyFunction(struct node: Node, indentation: Indentation, lookup: [String: NodeType]) -> String {
     func applyRefTypes(fields: [Field], indent: Indentation) -> String {
         var result = [String]()
         for field in fields {
@@ -1012,7 +1018,7 @@ fileprivate func generateApplyFunction(struct node: Node, indentation: Indentati
     """.indent(with: indentation)
 }
 
-fileprivate func generateEqualityFunctions(struct node: Node, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+fileprivate func generateEqualityFunctions(struct node: Node, indentation: Indentation, lookup: [String: NodeType]) -> String {
     func unboxOptionalsStatements(fields: [Field], indent: Indentation) -> String {
         var result = [String]()
         for field in fields {
@@ -1104,7 +1110,7 @@ fileprivate func generateEqualityFunctions(struct node: Node, indentation: Inden
     """.indent(with: indentation)
 }
 
-fileprivate func generateHashFunctions(struct node: Node, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+fileprivate func generateHashFunctions(struct node: Node, indentation: Indentation, lookup: [String: NodeType]) -> String {
 
     func combineStatement(fields: [Field], indent: Indentation) -> String {
         var string = ""
@@ -1161,8 +1167,8 @@ fileprivate func generateHashFunctions(struct node: Node, indentation: Indentati
     """.indent(with: indentation)
 }
 
-fileprivate func generateWithReader(struct node: Node, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
-    func typeAwareBody(node: Node, indentation: Indentation, lookup: Dictionary<String, NodeType>) -> String {
+fileprivate func generateWithReader(struct node: Node, indentation: Indentation, lookup: [String: NodeType], nodeNameResolution: [String: String]) -> String {
+    func typeAwareBody(node: Node, indentation: Indentation, lookup: [String: NodeType], nodeNameResolution: [String: String]) -> String {
         var result = [(String, Indentation)]()
         if node.frozen {
             let optionalFieldsCount = node.fields.reduce(0) { partialResult, field in
@@ -1226,6 +1232,7 @@ fileprivate func generateWithReader(struct node: Node, indentation: Indentation,
                 }
             case .ref(let typeName):
                 let nodeType = lookup[typeName]!
+                let typeName = nodeNameResolution[typeName] ?? typeName
                 if let enumType = nodeType as? Enum {
                     result.append(("let \(field.name)Value\(enumReadStatementType(enumType: enumType))", indentation + 1))
                     if field.fieldOptions.isRequired {
@@ -1314,7 +1321,7 @@ fileprivate func generateWithReader(struct node: Node, indentation: Indentation,
             return result
         }
         try reader.seek(to: offset)
-    \(typeAwareBody(node: node, indentation: indentation, lookup: lookup))
+    \(typeAwareBody(node: node, indentation: indentation, lookup: lookup, nodeNameResolution: nodeNameResolution))
         return result
     }
     """.indent(with: indentation)

@@ -8,20 +8,24 @@ let package = Package(
     products: [
         .library(name: "Dagr", targets: ["Dagr"]),
         .library(name: "DagrCodeGen", targets: ["DagrCodeGen"]),
+        .library(name: "FoundationNodes", targets: ["FoundationNodes"]),
+        .library(name: "FoundationNodesDefenition", targets: ["FoundationNodesDefenition"])
     ],
     targets: [
         .target(name: "Dagr"),
         .target(name: "DagrCodeGen"),
-        .testTarget(name: "DagrTests",dependencies: ["Dagr"]),
+        .target(name: "FoundationNodes", dependencies: ["Dagr"]),
+        .target(name: "FoundationNodesDefenition", dependencies: ["DagrCodeGen"]),
+        .testTarget(name: "DagrTests",dependencies: ["Dagr", "FoundationNodes"]),
         .testTarget(name: "DagrCodeGenTests",dependencies: ["DagrCodeGen"]),
-        .executableTarget(name: "DagrCodeGenExample", dependencies: ["DagrCodeGen"]),
+        .executableTarget(name: "CodeGen", dependencies: ["DagrCodeGen", "FoundationNodesDefenition"]),
         .plugin(
-            name: "DagrCodeGenPlugin",
+            name: "CodeGenPlugin",
             capability: .command(
-                intent: .custom(verb: "dagr-code-gen", description: "Generates Dagr examples"),
+                intent: .custom(verb: "code-gen", description: "Generates graphs"),
                 permissions: [.writeToPackageDirectory(reason: "Generate source files")]
             ),
-            dependencies: ["DagrCodeGenExample"]
+            dependencies: ["CodeGen"]
         ),
     ]
 )

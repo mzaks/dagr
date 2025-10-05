@@ -1,4 +1,6 @@
 import Testing
+import Foundation
+import FoundationNodes
 @testable import Dagr
 
 typealias Person6 = BuilderSamples.Person6
@@ -739,5 +741,16 @@ typealias PersonId2 = BuilderSamples.PersonId2
         let reader = DataReader(data: data)
         let p2 = try Person12.with(reader: reader, offset: UInt64(data.count) - offset)
         #expect(p1 == p2)
+    }
+    do {
+        let p1 = Person12(id:FoundationNode.UUID(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10, k: 11, l: 12, m: 13, n: 14, o: 15, p: 16))
+        let builder = DataBuilder()
+        let offset = try p1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let p2 = try Person12.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(p1 == p2)
+        #expect(p1.id?.string == "01020304-0506-0708-090a-0b0c0d0e0f10")
+        #expect(p1.id?.uuid == UUID(uuidString: "01020304-0506-0708-090a-0b0c0d0e0f10"))
     }
 }

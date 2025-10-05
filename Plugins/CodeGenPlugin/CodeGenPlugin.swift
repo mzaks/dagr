@@ -12,8 +12,8 @@ import Foundation
 @main
 struct DagrStoreGenPlugin: CommandPlugin {
     func performCommand(context: PluginContext, arguments: [String]) async throws {
-        let tool = try context.tool(named: "DagrCodeGenExample")
-        let outputUrl = context.package.directoryURL.appending(components: "Tests", "DagrTests", "gen")
+        let tool = try context.tool(named: "CodeGen")
+        let outputUrl = context.package.directoryURL
         let proc = Process()
         proc.executableURL = tool.url
         proc.arguments = [outputUrl.path(percentEncoded: false)] + arguments

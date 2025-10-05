@@ -524,6 +524,26 @@ import Testing
     }.validate()
 }
 
+@Test func validateDataGraphWithImport() throws {
+    let subGraph = DataGraph("S", rootType: .ref("UUID")) {
+        Node("UUID", frozen: true) {
+            "first" ++ .u64 ++ .required
+            "second" ++ .u64 ++ .required
+        }
+    }
+    try DataGraph("G", rootType: .ref("Person"), imports: [subGraph.imported]) {
+        Node("Person") {
+            "name" ++ .utf8
+            "gender" ++ .ref("Gender")
+            "friends" ++ .ref("Person").array
+            "addressList" ++ .ref("Address").array
+            "id" ++ .ref("UUID")
+        }
+        Enum("Gender", ["m", "f", "d"])
+        UnionType("Address", types: [("email", .utf8), ("person", .ref("Person"))])
+    }.validate()
+}
+
 
 private func assert(_ g: DataGraph, error: ValidationError) {
     #expect(performing: {

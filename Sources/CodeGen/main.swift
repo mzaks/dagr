@@ -7,10 +7,20 @@
 
 import Foundation
 import DagrCodeGen
+import FoundationNodesDefenition
 
-func genDataBuilderGraph(outputUrl: URL) throws {
+func genFoundationNodes(outputUrl: URL) throws {
     try generate(
-        graph: DataGraph("BuilderSamples", rootType: .array(.ref("Types"))){
+        graph: foundationNodesGraph,
+        path: outputUrl,
+        fileNameSuffix: "_generated",
+    )
+    print("✅ Generated code at \(outputUrl.absoluteString)")
+}
+
+func genBuilderSamplesForTest(outputUrl: URL) throws {
+    try generate(
+        graph: DataGraph("BuilderSamples", rootType: .array(.ref("Types")), imports: [ImportedGraph(graph: foundationNodesGraph, packageName: "FoundationNodes")]){
             UnionType("Types", types: [
                 ("Person1", .ref("Person1")),
                 ("Person2", .ref("Person2")),
@@ -133,14 +143,17 @@ func genDataBuilderGraph(outputUrl: URL) throws {
                 "gender"    ++ .ref("Gender")       ++ .required    ++ .ref("diverse")
                 "genders1"  ++ .ref("Gender").array                 ++ .array([])
                 "genders2"  ++ .ref("Gender").array                 ++ .array([.ref("diverse"), .ref("female"), .ref("male")])
-                "date"      ++ .ref("MyDate")                       ++ .ref("millennium") 
+                "date"      ++ .ref("MyDate")                       ++ .ref("millennium")
+                "id"        ++ .ref("UUID")
             }
         },
         path: outputUrl,
         fileNameSuffix: "_generated"
     )
+    print("✅ Generated code at \(outputUrl.absoluteString)")
 }
 
+@available(macOS 13.0, *)
 func main() throws {
     guard CommandLine.arguments.count > 1 else {
         print("Usage: first argument <output-path>")
@@ -151,9 +164,11 @@ func main() throws {
 
     let outputUrl = URL(fileURLWithPath: outputPath)
 
-    try genDataBuilderGraph(outputUrl: outputUrl)
-
-    print("✅ Generated code at \(outputUrl.absoluteString)")
-
+    try genBuilderSamplesForTest(outputUrl: outputUrl.appending(components: "Tests", "DagrTests", "gen"))
+    try genFoundationNodes(outputUrl: outputUrl.appending(components: "Sources", "FoundationNodes"))
 }
-try main()
+if #available(macOS 13.0, *) {
+    try main()
+} else {
+    print("⛔️ We expect you to run macOS 13 or later")
+}

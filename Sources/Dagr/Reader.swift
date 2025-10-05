@@ -41,6 +41,7 @@ public enum ReaderError: Error {
     case badVTableCount(Int)
     case badStructOffset
     case requiredFieldIsMissing
+    case unexpectedUnionCase
 }
 
 public protocol Reader {
