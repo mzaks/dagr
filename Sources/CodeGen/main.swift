@@ -9,6 +9,23 @@ import Foundation
 import DagrCodeGen
 import FoundationNodesDefenition
 
+func genJSONLike(outputUrl: URL) throws {
+    try generate(graph: DataGraph("JSONLike", rootType: .ref("Value"), types: {
+        Node("Pair", frozen: true) {
+            "key"   ++ .utf8 ++ .required
+            "value" ++ .ref("Value")
+        }
+        UnionType("Value", types: [
+            ("string", .utf8),
+            ("bool", .bool),
+            ("number", .f64),
+            ("array", .arrayWithOptionals(.ref("Value"))),
+            ("dict", .array(.ref("Pair")))
+        ])
+    }), path: outputUrl, fileNameSuffix: "_generated")
+    print("✅ Generated code at \(outputUrl.absoluteString)")
+}
+
 func genFoundationNodes(outputUrl: URL) throws {
     try generate(
         graph: foundationNodesGraph,
@@ -34,6 +51,12 @@ func genBuilderSamplesForTest(outputUrl: URL) throws {
                 ("Person10", .ref("Person10")),
                 ("Person11", .ref("Person11")),
                 ("Person12", .ref("Person12")),
+                ("StringDict1", .ref("StringDict1")),
+                ("StringDict2", .ref("StringDict2")),
+                ("StringDict3", .ref("StringDict3")),
+                ("StringDict4", .ref("StringDict4")),
+                ("StringDict5", .ref("StringDict5")),
+                ("StringDict6", .ref("StringDict6")),
             ], capacity: 1000)
             Node("Person1") {
                 "name" ++ .utf8
@@ -146,6 +169,36 @@ func genBuilderSamplesForTest(outputUrl: URL) throws {
                 "date"      ++ .ref("MyDate")                       ++ .ref("millennium")
                 "id"        ++ .ref("UUID")
             }
+            
+            Node("StringDict1", frozen: true) {
+                "keys" ++ .array(.utf8)             ++ .required
+                "values" ++ .array(.ref("Person1"))   ++ .required
+            }
+            
+            Node("StringDict2", frozen: true) {
+                "keys" ++ .array(.utf8)
+                "values" ++ .array(.ref("Person1"))
+            }
+            
+            Node("StringDict3") {
+                "keys" ++ .array(.utf8)
+                "values" ++ .array(.ref("Person1"))
+            }
+            
+            Node("StringDict4") {
+                "keys" ++ .array(.utf8)             ++ .required
+                "values" ++ .array(.ref("Person1"))   ++ .required
+            }
+            
+            Node("StringDict5", sparse: true) {
+                "keys" ++ .array(.utf8)             ++ .required
+                "values" ++ .array(.ref("Person1"))   ++ .required
+            }
+            
+            Node("StringDict6", sparse: true) {
+                "keys" ++ .array(.utf8)
+                "values" ++ .array(.ref("Person1"))
+            }
         },
         path: outputUrl,
         fileNameSuffix: "_generated"
@@ -165,6 +218,7 @@ func main() throws {
     let outputUrl = URL(fileURLWithPath: outputPath)
 
     try genBuilderSamplesForTest(outputUrl: outputUrl.appending(components: "Tests", "DagrTests", "gen"))
+    try genJSONLike(outputUrl: outputUrl.appending(components: "Tests", "DagrTests", "gen"))
     try genFoundationNodes(outputUrl: outputUrl.appending(components: "Sources", "FoundationNodes"))
 }
 if #available(macOS 13.0, *) {

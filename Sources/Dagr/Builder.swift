@@ -56,7 +56,7 @@ public protocol Builder {
     func storeAsLEB(value: UInt64) throws -> UInt64
     func storeBidirectionalPointer(value: UInt64) throws -> UInt64
     func reserveFieldPointer(for structNodeId: Node) throws -> UInt64
-    func storeForwardPointer(value: UInt64) throws -> UInt64
+    func storeForwardPointer(value: UInt64?) throws -> UInt64?
     func store(vTable:[UInt64?]) throws -> UInt64
     func storeSparse(vTable:[UInt64?]) throws -> UInt64
     func storeWithOptionals<T : Numeric>(numbers: [T?]) throws -> UInt64
@@ -801,8 +801,11 @@ public final class DataBuilder: Builder {
         return cursor
     }
 
-    public func storeForwardPointer(value: UInt64) throws -> UInt64 {
-        return try storeAsLEB(value: cursor - value)
+    public func storeForwardPointer(value: UInt64?) throws -> UInt64? {
+        if let value {
+            return try storeAsLEB(value: cursor - value)
+        }
+        return nil
     }
 
     public func storeBidirectionalPointer(value: UInt64) throws -> UInt64 {

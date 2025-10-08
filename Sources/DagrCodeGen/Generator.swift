@@ -635,7 +635,7 @@ func generate(unionType node: UnionType, with indentation: Indentation, lookup: 
                     if type is Enum {
                         result.append("return try .\(t.name)(reader.readAndSeekEnumArray\(sufix)())".expressionIndent(with: indentation + 1))
                     } else if type is Node {
-                        result.append("return try .array(reader.readAndSeekStructArray\(sufix)())".expressionIndent(with: indentation + 1))
+                        result.append("return try .\(t.name)(reader.readAndSeekStructArray\(sufix)())".expressionIndent(with: indentation + 1))
                     } else if type is UnionType {
                         result.append("return try .\(t.name)(reader.readAndSeekUnionTypeArray\(sufix)())".expressionIndent(with: indentation + 1))
                     } else {
@@ -859,45 +859,51 @@ fileprivate func generateApplyFunction(struct node: Node, indentation: Indentati
                 withOptionals = false
                 fallthrough
             case .arrayWithOptionals(let entryType):
+                let statementPreffix: String
+                if field.fieldOptions.isRequired {
+                    statementPreffix = "let \(field.name)Pointer = try builder.store"
+                } else {
+                    statementPreffix = "let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store"
+                }
                 switch entryType {
                 case .u8, .u16, .u32, .u64, .i8, .i16, .i32, .i64, .f32, .f64:
                     if withOptionals {
                         result.append(
-                            "let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.storeWithOptionals(numbers: \(field.name))"
+                            "\(statementPreffix)WithOptionals(numbers: \(field.name))"
                         )
                     } else {
-                        result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(numbers: \(field.name))")
+                        result.append("\(statementPreffix)(numbers: \(field.name))")
                     }
                 case .bool:
                     if withOptionals {
                         result.append(
-                            "let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.storeWithOptionals(bools: \(field.name))"
+                            "\(statementPreffix)WithOptionals(bools: \(field.name))"
                         )
                     } else {
                         result.append(
-                            "let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(bools: \(field.name))"
+                            "\(statementPreffix)(bools: \(field.name))"
                         )
                     }
 
                 case .utf8:
-                    result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(strings: \(field.name))")
+                    result.append("\(statementPreffix)(strings: \(field.name))")
                 case .data:
-                    result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(datas: \(field.name))")
+                    result.append("\(statementPreffix)(datas: \(field.name))")
                 case .ref(let name):
                     let nodeType = lookup[name]!
                     if nodeType is Enum {
                         if withOptionals {
-                            result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.storeWithOptionals(enums: \(field.name))")
+                            result.append("\(statementPreffix)WithOptionals(enums: \(field.name))")
                         } else {
-                            result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(enums: \(field.name))")
+                            result.append("\(statementPreffix)(enums: \(field.name))")
                         }
                     } else if nodeType is Node {
-                        result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(structNodes: \(field.name))")
+                        result.append("\(statementPreffix)(structNodes: \(field.name))")
                     } else if nodeType is UnionType {
                         if withOptionals {
-                            result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.storeWithOptionals(unionTypes: \(field.name))")
+                            result.append("\(statementPreffix)WithOptionals(unionTypes: \(field.name))")
                         } else {
-                            result.append("let \(field.name)Pointer = \(field.name).isEmpty ? nil : try builder.store(unionTypes: \(field.name))")
+                            result.append("\(statementPreffix)(unionTypes: \(field.name))")
                         }
                     } else {
                         fatalError("Unexpected node type \(nodeType) for name: \(name)")
@@ -932,11 +938,7 @@ fileprivate func generateApplyFunction(struct node: Node, indentation: Indentati
                 }
             case .utf8, .data, .array, .arrayWithOptionals:
                 let fieldName = node.frozen ? "_" : "let \(field.name)PointerCursor"
-                if field.fieldOptions.isRequired {
-                    result.append("\(fieldName) = try builder.storeForwardPointer(value: \(field.name)Pointer)")
-                } else {
-                    result.append("\(fieldName) = try \(field.name)Pointer.map { try builder.storeForwardPointer(value: $0) }")
-                }
+                result.append("\(fieldName) = try builder.storeForwardPointer(value: \(field.name)Pointer)")
             case .ref(let name):
                 let nodeType = lookup[name]!
                 if nodeType is Enum {

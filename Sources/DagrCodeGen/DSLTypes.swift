@@ -438,6 +438,12 @@ extension UnionType {
         }
         for (index, pair) in prev.types.enumerated() {
             let prevType = pair.type
+            let path = "\(self.name):::\(pair.name)"
+            if visited.contains(path) {
+                continue
+            } else {
+                visited.insert(path)
+            }
             let currentType = self.types[index].type
             guard try currentType.compatible(with: prevType, strict: true, selfLookup: selfLookup, otherLookup: otherLookup, visited: &visited) else {
                 throw CompatibilityError.changedUnitType(unionTypeName: name, index: UInt(index))

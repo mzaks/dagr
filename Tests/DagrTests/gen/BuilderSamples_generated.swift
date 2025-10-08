@@ -1,4 +1,4 @@
-//  Generated with Dagr on 04.10.25.
+//  Generated with Dagr on 07.10.25.
 //  https://github.com/mzaks/dagr
 //
 
@@ -20,7 +20,7 @@ public enum BuilderSamples {
 
     public enum Types: UnionNode, Equatable, CycleAwareEquatable, CycleAwareHashable {
 
-        case Person1(Person1), Person2(Person2), Person3(Person3), Person4(Person4), Person5(Person5), Person6(Person6), Person7(Person7), Person8(Person8), Person9(Person9), Person10(Person10), Person11(Person11), Person12(Person12)
+        case Person1(Person1), Person2(Person2), Person3(Person3), Person4(Person4), Person5(Person5), Person6(Person6), Person7(Person7), Person8(Person8), Person9(Person9), Person10(Person10), Person11(Person11), Person12(Person12), StringDict1(StringDict1), StringDict2(StringDict2), StringDict3(StringDict3), StringDict4(StringDict4), StringDict5(StringDict5), StringDict6(StringDict6)
 
         public var typeId: UInt64 {
             switch self {
@@ -36,6 +36,12 @@ public enum BuilderSamples {
                 case .Person10: return 9
                 case .Person11: return 10
                 case .Person12: return 11
+                case .StringDict1: return 12
+                case .StringDict2: return 13
+                case .StringDict3: return 14
+                case .StringDict4: return 15
+                case .StringDict5: return 16
+                case .StringDict6: return 17
             }
         }
 
@@ -103,6 +109,36 @@ public enum BuilderSamples {
                         return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
                     }
                     return false
+                case .StringDict1(let selfValue):
+                    if case .StringDict1(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
+                case .StringDict2(let selfValue):
+                    if case .StringDict2(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
+                case .StringDict3(let selfValue):
+                    if case .StringDict3(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
+                case .StringDict4(let selfValue):
+                    if case .StringDict4(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
+                case .StringDict5(let selfValue):
+                    if case .StringDict5(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
+                case .StringDict6(let selfValue):
+                    if case .StringDict6(let otherValue) = other {
+                        return selfValue.cycleAwareEquality(other: otherValue, visited: &visited)
+                    }
+                    return false
             }
         }
 
@@ -132,6 +168,18 @@ public enum BuilderSamples {
                     selfPerson11.hash(into: &hasher, visited: &visited)
                 case .Person12(let selfPerson12):
                     selfPerson12.hash(into: &hasher, visited: &visited)
+                case .StringDict1(let selfStringdict1):
+                    selfStringdict1.hash(into: &hasher, visited: &visited)
+                case .StringDict2(let selfStringdict2):
+                    selfStringdict2.hash(into: &hasher, visited: &visited)
+                case .StringDict3(let selfStringdict3):
+                    selfStringdict3.hash(into: &hasher, visited: &visited)
+                case .StringDict4(let selfStringdict4):
+                    selfStringdict4.hash(into: &hasher, visited: &visited)
+                case .StringDict5(let selfStringdict5):
+                    selfStringdict5.hash(into: &hasher, visited: &visited)
+                case .StringDict6(let selfStringdict6):
+                    selfStringdict6.hash(into: &hasher, visited: &visited)
             }
         }
 
@@ -209,6 +257,42 @@ public enum BuilderSamples {
                     } else {
                         return .reservedPointer(value: ObjectIdentifier(value), id: 11)
                     }
+                case .StringDict1(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 12)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 12)
+                    }
+                case .StringDict2(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 13)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 13)
+                    }
+                case .StringDict3(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 14)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 14)
+                    }
+                case .StringDict4(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 15)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 15)
+                    }
+                case .StringDict5(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 16)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 16)
+                    }
+                case .StringDict6(let value):
+                    if let pointer = try builder.store(structNode: value) {
+                        return .bidirPointer(value: pointer, id: 17)
+                    } else {
+                        return .reservedPointer(value: ObjectIdentifier(value), id: 17)
+                    }
             }
         }
 
@@ -285,6 +369,42 @@ public enum BuilderSamples {
                 try reader.seek(by: bidirValue)
                 return try .Person12(BuilderSamples.Person12.with(reader: reader, offset: reader.cursor))
             }
+            if typeId == 12 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict1(BuilderSamples.StringDict1.with(reader: reader, offset: reader.cursor))
+            }
+            if typeId == 13 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict2(BuilderSamples.StringDict2.with(reader: reader, offset: reader.cursor))
+            }
+            if typeId == 14 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict3(BuilderSamples.StringDict3.with(reader: reader, offset: reader.cursor))
+            }
+            if typeId == 15 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict4(BuilderSamples.StringDict4.with(reader: reader, offset: reader.cursor))
+            }
+            if typeId == 16 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict5(BuilderSamples.StringDict5.with(reader: reader, offset: reader.cursor))
+            }
+            if typeId == 17 {
+                let bidirValue = value.fromZigZag
+                if bidirValue < 0 { try reader.seek(to: offset) }
+                try reader.seek(by: bidirValue)
+                return try .StringDict6(BuilderSamples.StringDict6.with(reader: reader, offset: reader.cursor))
+            }
             return nil
         }
     }
@@ -308,7 +428,7 @@ public enum BuilderSamples {
             let namePointer = try name.map { try builder.store(string: $0) }
 
             let ageValueCursor = try age.map { try builder.store(number: $0) }
-            let namePointerCursor = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.store(vTable: [namePointerCursor, ageValueCursor])
 
@@ -391,7 +511,7 @@ public enum BuilderSamples {
             let namePointer = try name.map { try builder.store(string: $0) }
 
             _ = try age.map { try builder.store(number: $0) }
-            _ = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            _ = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.store(inline: [name != nil, age != nil].bitSet)
 
@@ -467,7 +587,7 @@ public enum BuilderSamples {
             let namePointer = try name.map { try builder.store(string: $0) }
 
             let ageValueCursor = try age.map { try builder.store(number: $0) }
-            let namePointerCursor = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.storeSparse(vTable: [namePointerCursor, ageValueCursor])
 
@@ -640,7 +760,7 @@ public enum BuilderSamples {
                 }
             }
             let ageValueCursor = try age.map { try builder.store(number: $0) }
-            let namePointerCursor = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.store(vTable: [namePointerCursor, ageValueCursor, datePointerCursor])
 
@@ -763,7 +883,7 @@ public enum BuilderSamples {
                 }
             }
             let ageValueCursor = try age.map { try builder.store(number: $0) }
-            let namePointerCursor = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.store(vTable: [namePointerCursor, ageValueCursor, datePointerCursor, friendPointerCursor])
 
@@ -902,7 +1022,7 @@ public enum BuilderSamples {
                 }
             }
             _ = try age.map { try builder.store(number: $0) }
-            _ = try namePointer.map { try builder.storeForwardPointer(value: $0) }
+            _ = try builder.storeForwardPointer(value: namePointer)
 
             return try builder.store(inline: [name != nil, age != nil, date != nil, friend != nil].bitSet)
 
@@ -1028,14 +1148,14 @@ public enum BuilderSamples {
             let boolsPointer = bools.isEmpty ? nil : try builder.store(bools: bools)
             let optionalBoolsPointer = optionalBools.isEmpty ? nil : try builder.storeWithOptionals(bools: optionalBools)
 
-            let optionalBoolsPointerCursor = try optionalBoolsPointer.map { try builder.storeForwardPointer(value: $0) }
-            let boolsPointerCursor = try boolsPointer.map { try builder.storeForwardPointer(value: $0) }
-            let friendsPointerCursor = try friendsPointer.map { try builder.storeForwardPointer(value: $0) }
-            let datesPointerCursor = try datesPointer.map { try builder.storeForwardPointer(value: $0) }
-            let optionalAgesPointerCursor = try optionalAgesPointer.map { try builder.storeForwardPointer(value: $0) }
-            let agesPointerCursor = try agesPointer.map { try builder.storeForwardPointer(value: $0) }
-            let optionalNameListPointerCursor = try optionalNameListPointer.map { try builder.storeForwardPointer(value: $0) }
-            let nameListPointerCursor = try nameListPointer.map { try builder.storeForwardPointer(value: $0) }
+            let optionalBoolsPointerCursor = try builder.storeForwardPointer(value: optionalBoolsPointer)
+            let boolsPointerCursor = try builder.storeForwardPointer(value: boolsPointer)
+            let friendsPointerCursor = try builder.storeForwardPointer(value: friendsPointer)
+            let datesPointerCursor = try builder.storeForwardPointer(value: datesPointer)
+            let optionalAgesPointerCursor = try builder.storeForwardPointer(value: optionalAgesPointer)
+            let agesPointerCursor = try builder.storeForwardPointer(value: agesPointer)
+            let optionalNameListPointerCursor = try builder.storeForwardPointer(value: optionalNameListPointer)
+            let nameListPointerCursor = try builder.storeForwardPointer(value: nameListPointer)
 
             return try builder.store(vTable: [nameListPointerCursor, optionalNameListPointerCursor, agesPointerCursor, optionalAgesPointerCursor, datesPointerCursor, friendsPointerCursor, boolsPointerCursor, optionalBoolsPointerCursor])
 
@@ -1204,14 +1324,14 @@ public enum BuilderSamples {
             let boolsPointer = bools.isEmpty ? nil : try builder.store(bools: bools)
             let optionalBoolsPointer = optionalBools.isEmpty ? nil : try builder.storeWithOptionals(bools: optionalBools)
 
-            _ = try optionalBoolsPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try boolsPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try friendsPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try datesPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try optionalAgesPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try agesPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try optionalNameListPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try nameListPointer.map { try builder.storeForwardPointer(value: $0) }
+            _ = try builder.storeForwardPointer(value: optionalBoolsPointer)
+            _ = try builder.storeForwardPointer(value: boolsPointer)
+            _ = try builder.storeForwardPointer(value: friendsPointer)
+            _ = try builder.storeForwardPointer(value: datesPointer)
+            _ = try builder.storeForwardPointer(value: optionalAgesPointer)
+            _ = try builder.storeForwardPointer(value: agesPointer)
+            _ = try builder.storeForwardPointer(value: optionalNameListPointer)
+            _ = try builder.storeForwardPointer(value: nameListPointer)
 
             return try builder.store(inline: [nameList.isEmpty == false, optionalNameList.isEmpty == false, ages.isEmpty == false, optionalAges.isEmpty == false, dates.isEmpty == false, friends.isEmpty == false, bools.isEmpty == false, optionalBools.isEmpty == false].bitSet)
 
@@ -1425,14 +1545,14 @@ public enum BuilderSamples {
             let gendersPointer = genders.isEmpty ? nil : try builder.store(enums: genders)
             let gendersWithOptionalPointer = gendersWithOptional.isEmpty ? nil : try builder.storeWithOptionals(enums: gendersWithOptional)
 
-            let gendersWithOptionalPointerCursor = try gendersWithOptionalPointer.map { try builder.storeForwardPointer(value: $0) }
-            let gendersPointerCursor = try gendersPointer.map { try builder.storeForwardPointer(value: $0) }
+            let gendersWithOptionalPointerCursor = try builder.storeForwardPointer(value: gendersWithOptionalPointer)
+            let gendersPointerCursor = try builder.storeForwardPointer(value: gendersPointer)
             let genderPointerCursor = try gender.map { try builder.store(enum: $0) }
-            let multipleOptionalToppingsPointerCursor = try multipleOptionalToppingsPointer.map { try builder.storeForwardPointer(value: $0) }
-            let multipleToppingsPointerCursor = try multipleToppingsPointer.map { try builder.storeForwardPointer(value: $0) }
+            let multipleOptionalToppingsPointerCursor = try builder.storeForwardPointer(value: multipleOptionalToppingsPointer)
+            let multipleToppingsPointerCursor = try builder.storeForwardPointer(value: multipleToppingsPointer)
             let toppingsPointerCursor = try toppings.map { try builder.store(enum: $0) }
-            let monthsWithOptionalPointerCursor = try monthsWithOptionalPointer.map { try builder.storeForwardPointer(value: $0) }
-            let monthsPointerCursor = try monthsPointer.map { try builder.storeForwardPointer(value: $0) }
+            let monthsWithOptionalPointerCursor = try builder.storeForwardPointer(value: monthsWithOptionalPointer)
+            let monthsPointerCursor = try builder.storeForwardPointer(value: monthsPointer)
             let monthPointerCursor = try month.map { try builder.store(enum: $0) }
 
             return try builder.store(vTable: [monthPointerCursor, monthsPointerCursor, monthsWithOptionalPointerCursor, toppingsPointerCursor, multipleToppingsPointerCursor, multipleOptionalToppingsPointerCursor, genderPointerCursor, gendersPointerCursor, gendersWithOptionalPointerCursor])
@@ -1678,8 +1798,8 @@ public enum BuilderSamples {
             let numbersPointer = numbers.isEmpty ? nil : try builder.store(unionTypes: numbers)
             let optionalNumbersPointer = optionalNumbers.isEmpty ? nil : try builder.storeWithOptionals(unionTypes: optionalNumbers)
 
-            let optionalNumbersPointerCursor = try optionalNumbersPointer.map { try builder.storeForwardPointer(value: $0) }
-            let numbersPointerCursor = try numbersPointer.map { try builder.storeForwardPointer(value: $0) }
+            let optionalNumbersPointerCursor = try builder.storeForwardPointer(value: optionalNumbersPointer)
+            let numbersPointerCursor = try builder.storeForwardPointer(value: numbersPointer)
             let numberPointerCursor = try numberAppliedValue.map { try builder.store(unionType: $0) }
 
             return try builder.store(vTable: [numberPointerCursor, numbersPointerCursor, optionalNumbersPointerCursor])
@@ -1968,10 +2088,10 @@ public enum BuilderSamples {
             let personId2AppliedValue = try personId2?.apply(builder: builder)
             let personIds2Pointer = personIds2.isEmpty ? nil : try builder.store(unionTypes: personIds2)
 
-            let personIds2PointerCursor = try personIds2Pointer.map { try builder.storeForwardPointer(value: $0) }
+            let personIds2PointerCursor = try builder.storeForwardPointer(value: personIds2Pointer)
             let personId2PointerCursor = try personId2AppliedValue.map { try builder.store(unionType: $0) }
-            let optionalPersonIdsPointerCursor = try optionalPersonIdsPointer.map { try builder.storeForwardPointer(value: $0) }
-            let personIdsPointerCursor = try personIdsPointer.map { try builder.storeForwardPointer(value: $0) }
+            let optionalPersonIdsPointerCursor = try builder.storeForwardPointer(value: optionalPersonIdsPointer)
+            let personIdsPointerCursor = try builder.storeForwardPointer(value: personIdsPointer)
             let personIdPointerCursor = try personIdAppliedValue.map { try builder.store(unionType: $0) }
 
             return try builder.store(vTable: [personIdPointerCursor, personIdsPointerCursor, optionalPersonIdsPointerCursor, personId2PointerCursor, personIds2PointerCursor])
@@ -2133,8 +2253,8 @@ public enum BuilderSamples {
                     datePointerCursor = try builder.reserveFieldPointer(for: date)
                 }
             }
-            let genders2PointerCursor = try genders2Pointer.map { try builder.storeForwardPointer(value: $0) }
-            let genders1PointerCursor = try genders1Pointer.map { try builder.storeForwardPointer(value: $0) }
+            let genders2PointerCursor = try builder.storeForwardPointer(value: genders2Pointer)
+            let genders1PointerCursor = try builder.storeForwardPointer(value: genders1Pointer)
             let genderPointerCursor = try builder.store(enum: gender)
             let activeValueCursor = try active.map { try builder.store(number: $0 ? UInt8(1) : UInt8(0)) }
             let namePointerCursor = try builder.storeForwardPointer(value: namePointer)
@@ -2261,6 +2381,511 @@ public enum BuilderSamples {
                 result.id = try FoundationNode.UUID.with(reader: reader, offset:  UInt64(Int64(reader.cursor) + idPointer))
             } else {
                 result.id = nil
+            }
+            try reader.seek(to: vTableStartOffest)
+
+            return result
+        }
+
+    }
+
+    public final class StringDict1: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String], values: [Person1]) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = try builder.store(strings: keys)
+            let valuesPointer = try builder.store(structNodes: values)
+
+            _ = try builder.storeForwardPointer(value: valuesPointer)
+            _ = try builder.storeForwardPointer(value: keysPointer)
+
+            return builder.cursor
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict1, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict1 {
+            var result: StringDict1
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            do {
+                let arrayPointer = try reader.readAndSeekLEB()
+                let currentCursor = reader.cursor
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+                try reader.seek(to: currentCursor)
+            }
+            do {
+                let arrayPointer = try reader.readAndSeekLEB()
+                let currentCursor = reader.cursor
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+                try reader.seek(to: currentCursor)
+            }
+
+            return result
+        }
+
+    }
+
+    public final class StringDict2: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String] = [], values: [Person1] = []) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = keys.isEmpty ? nil : try builder.store(strings: keys)
+            let valuesPointer = values.isEmpty ? nil : try builder.store(structNodes: values)
+
+            _ = try builder.storeForwardPointer(value: valuesPointer)
+            _ = try builder.storeForwardPointer(value: keysPointer)
+
+            return try builder.store(inline: [keys.isEmpty == false, values.isEmpty == false].bitSet)
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict2, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict2 {
+            var result: StringDict2
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let optionalFields = try reader.readAndSeekBoolArrayWithLength(length: 2)
+            if optionalFields[0] {
+                let arrayPointer = try reader.readAndSeekLEB()
+                let currentCursor = reader.cursor
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+                try reader.seek(to: currentCursor)
+            }
+            if optionalFields[1] {
+                let arrayPointer = try reader.readAndSeekLEB()
+                let currentCursor = reader.cursor
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+                try reader.seek(to: currentCursor)
+            }
+
+            return result
+        }
+
+    }
+
+    public final class StringDict3: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String] = [], values: [Person1] = []) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = keys.isEmpty ? nil : try builder.store(strings: keys)
+            let valuesPointer = values.isEmpty ? nil : try builder.store(structNodes: values)
+
+            let valuesPointerCursor = try builder.storeForwardPointer(value: valuesPointer)
+            let keysPointerCursor = try builder.storeForwardPointer(value: keysPointer)
+
+            return try builder.store(vTable: [keysPointerCursor, valuesPointerCursor])
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict3, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict3 {
+            var result: StringDict3
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let vTable = try reader.readAndSeekVTable()
+            let vTableStartOffest = reader.cursor
+            if vTable.count > 0, let keysOffset = vTable[0] {
+                try reader.seek(by: keysOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+            } else {
+                result.keys = []
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 1, let valuesOffset = vTable[1] {
+                try reader.seek(by: valuesOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+            } else {
+                result.values = []
+            }
+            try reader.seek(to: vTableStartOffest)
+
+            return result
+        }
+
+    }
+
+    public final class StringDict4: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String], values: [Person1]) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = try builder.store(strings: keys)
+            let valuesPointer = try builder.store(structNodes: values)
+
+            let valuesPointerCursor = try builder.storeForwardPointer(value: valuesPointer)
+            let keysPointerCursor = try builder.storeForwardPointer(value: keysPointer)
+
+            return try builder.store(vTable: [keysPointerCursor, valuesPointerCursor])
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict4, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict4 {
+            var result: StringDict4
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let vTable = try reader.readAndSeekVTable()
+            let vTableStartOffest = reader.cursor
+            if vTable.count > 0, let keysOffset = vTable[0] {
+                try reader.seek(by: keysOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+            if vTable.count > 1, let valuesOffset = vTable[1] {
+                try reader.seek(by: valuesOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+
+            return result
+        }
+
+    }
+
+    public final class StringDict5: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String], values: [Person1]) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = try builder.store(strings: keys)
+            let valuesPointer = try builder.store(structNodes: values)
+
+            let valuesPointerCursor = try builder.storeForwardPointer(value: valuesPointer)
+            let keysPointerCursor = try builder.storeForwardPointer(value: keysPointer)
+
+            return try builder.storeSparse(vTable: [keysPointerCursor, valuesPointerCursor])
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict5, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict5 {
+            var result: StringDict5
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let vTable = try reader.readAndSeekSparseVTable()
+            let vTableStartOffest = reader.cursor
+            if let keysOffset = vTable[0] {
+                try reader.seek(by: keysOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+            if let valuesOffset = vTable[1] {
+                try reader.seek(by: valuesOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+            } else {
+                throw ReaderError.requiredFieldIsMissing
+            }
+            try reader.seek(to: vTableStartOffest)
+
+            return result
+        }
+
+    }
+
+    public final class StringDict6: Node, Equatable, CycleAwareEquatable, CycleAwareHashable {
+
+        public var keys: [String] = []
+        public var values: [Person1] = []
+
+        public init() {}
+
+        public init(keys: [String] = [], values: [Person1] = []) {
+            self.keys = keys
+            self.values = values
+        }
+
+
+
+
+        public func apply(builder: Builder) throws -> UInt64 {
+            let keysPointer = keys.isEmpty ? nil : try builder.store(strings: keys)
+            let valuesPointer = values.isEmpty ? nil : try builder.store(structNodes: values)
+
+            let valuesPointerCursor = try builder.storeForwardPointer(value: valuesPointer)
+            let keysPointerCursor = try builder.storeForwardPointer(value: keysPointer)
+
+            return try builder.storeSparse(vTable: [keysPointerCursor, valuesPointerCursor])
+
+        }
+
+
+        public func cycleAwareEquality(other: StringDict6, visited: inout Set<ObjectIdentifierPair>) -> Bool {
+            let objectIdentifierPair = ObjectIdentifierPair(left: ObjectIdentifier(self), right: ObjectIdentifier(other))
+            guard visited.contains(objectIdentifierPair) == false else {
+                return true
+            }
+            visited.insert(objectIdentifierPair)
+
+            return self.keys == other.keys
+                && self.values.cycleAwareEquality(other: other.values, visited: &visited)
+
+        }
+
+
+        public func hash(into hasher: inout Hasher, visited: inout Set<ObjectIdentifier>) {
+            let objectIdentifier = ObjectIdentifier(self)
+            guard visited.contains(objectIdentifier) == false else {
+                return
+            }
+            visited.insert(objectIdentifier)
+            hasher.combine(keys)
+            values.hash(into: &hasher, visited: &visited)
+
+        }
+
+
+        public static func with<T: Reader>(reader: T, offset: UInt64) throws -> StringDict6 {
+            var result: StringDict6
+            let allSet: Bool
+            (result, allSet) = try reader.getStructNode(from: offset)
+            if allSet {
+                return result
+            }
+            try reader.seek(to: offset)
+            let vTable = try reader.readAndSeekSparseVTable()
+            let vTableStartOffest = reader.cursor
+            if let keysOffset = vTable[0] {
+                try reader.seek(by: keysOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.keys = try reader.readAndSeekStringArray()
+            } else {
+                result.keys = []
+            }
+            try reader.seek(to: vTableStartOffest)
+            if let valuesOffset = vTable[1] {
+                try reader.seek(by: valuesOffset)
+                let arrayPointer = try reader.readAndSeekLEB()
+                try reader.seek(by: Int64(arrayPointer))
+                result.values = try reader.readAndSeekStructArray()
+            } else {
+                result.values = []
             }
             try reader.seek(to: vTableStartOffest)
 

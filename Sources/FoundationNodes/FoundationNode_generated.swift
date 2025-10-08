@@ -1,4 +1,4 @@
-//  Generated with Dagr on 04.10.25.
+//  Generated with Dagr on 07.10.25.
 //  https://github.com/mzaks/dagr
 //
 
@@ -297,14 +297,14 @@ public enum FoundationNode {
             let queryPointer = try query.map { try builder.store(string: $0) }
             let fragmentPointer = try fragment.map { try builder.store(string: $0) }
 
-            _ = try fragmentPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try queryPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try pathPointer.map { try builder.storeForwardPointer(value: $0) }
+            _ = try builder.storeForwardPointer(value: fragmentPointer)
+            _ = try builder.storeForwardPointer(value: queryPointer)
+            _ = try builder.storeForwardPointer(value: pathPointer)
             _ = try port.map { try builder.store(number: $0) }
-            _ = try hostPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try passwordPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try userPointer.map { try builder.storeForwardPointer(value: $0) }
-            _ = try schemePointer.map { try builder.storeForwardPointer(value: $0) }
+            _ = try builder.storeForwardPointer(value: hostPointer)
+            _ = try builder.storeForwardPointer(value: passwordPointer)
+            _ = try builder.storeForwardPointer(value: userPointer)
+            _ = try builder.storeForwardPointer(value: schemePointer)
 
             return try builder.store(inline: [scheme != nil, user != nil, password != nil, host != nil, port != nil, path != nil, query != nil, fragment != nil].bitSet)
 

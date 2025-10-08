@@ -12,6 +12,12 @@ typealias Person11 = BuilderSamples.Person11
 typealias Person12 = BuilderSamples.Person12
 typealias PersonId = BuilderSamples.PersonId
 typealias PersonId2 = BuilderSamples.PersonId2
+typealias StringDict1 = BuilderSamples.StringDict1
+typealias StringDict2 = BuilderSamples.StringDict2
+typealias StringDict3 = BuilderSamples.StringDict3
+typealias StringDict4 = BuilderSamples.StringDict4
+typealias StringDict5 = BuilderSamples.StringDict5
+typealias StringDict6 = BuilderSamples.StringDict6
 
 @Test func validateRoundTripPerson1() throws {
     do {
@@ -752,5 +758,132 @@ typealias PersonId2 = BuilderSamples.PersonId2
         #expect(p1 == p2)
         #expect(p1.id?.string == "01020304-0506-0708-090a-0b0c0d0e0f10")
         #expect(p1.id?.uuid == UUID(uuidString: "01020304-0506-0708-090a-0b0c0d0e0f10"))
+    }
+}
+
+
+@Test func validateRoundStringDict1() throws {
+    do {
+        let dict1 = StringDict1()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict1.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict1(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict1.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+}
+
+@Test func validateRoundStringDict2() throws {
+    do {
+        let dict1 = StringDict2()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict2.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict2(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict2.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+}
+
+@Test func validateRoundStringDict3() throws {
+    do {
+        let dict1 = StringDict3()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict3.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict3(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict3.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+}
+
+@Test func validateRoundStringDict4() throws {
+    do {
+        let dict1 = StringDict4()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict4.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict4(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict4.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+}
+
+@Test func validateRoundStringDict5() throws {
+    do {
+        let dict1 = StringDict5()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict5.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict5(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict5.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+}
+
+@Test func validateRoundStringDict6() throws {
+    do {
+        let dict1 = StringDict6()
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict6.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
+    }
+    do {
+        let dict1 = StringDict6(keys: ["a", "b", "c"], values: [.init(name: "max"), .init(name: "alex"), .init(name: "leo"), ])
+        let builder = DataBuilder()
+        let offset = try dict1.apply(builder: builder)
+        let data = builder.makeData
+        let reader = DataReader(data: data)
+        let dict2 = try StringDict6.with(reader: reader, offset: UInt64(data.count) - offset)
+        #expect(dict1 == dict2)
     }
 }
